@@ -2,6 +2,7 @@
   "113": {
     "totalCredits": 128,
     "geCredits": 28,
+    "geCodePrefixes": ["7"],
     "requiredCourses": [
       "中正講座-向典範學習",
       "認識大學教育",
@@ -174,6 +175,7 @@
   "114": {
     "totalCredits": 128,
     "geCredits": 28,
+    "geCodePrefixes": ["7"],
     "requiredCourses": [
       "科學與技術通論（一）",
       "人文與社會通論（一）",
