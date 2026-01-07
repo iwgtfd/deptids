@@ -19,36 +19,56 @@ export function runAudit(
     arr.reduce((s, c) => s + (Number(c.credits) || 0), 0);
 
   // =======================
-  // 建立學分查表（由 JSON 規則得來）
-  // - 共同必修：rule.requiredCourses = {課名:學分}
-  // - 專業註記：rules.specializations[id].prerequisites/required/electives = {課名:學分}
+  // 共同必修：rule.requiredCourses 允許兩種格式
+  // A) {課名: 學分}
+  // B) ["課名", ...]（舊版沒有學分，先當 0 / 或你要 2 也行）
+  // =======================
+  function getRequiredMap(){
+    const rc = rule.requiredCourses;
+    if (rc && typeof rc === "object" && !Array.isArray(rc)) return rc;
+    if (Array.isArray(rc)){
+      const obj = {};
+      rc.forEach(name => { obj[name] = 0; });
+      return obj;
+    }
+    return {};
+  }
+
+  const requiredMap = getRequiredMap();
+
+  // =======================
+  // 專業註記課庫：rules.specializations[id]
+  // spec.prerequisites/required/electives 都是 {課名: 學分}
+  // =======================
+  const specMap = rules?.specializations || {};
+  const spec = specializationId ? (specMap[specializationId] || null) : null;
+
+  // =======================
+  // 建立「課名 -> 學分」查表（只用來回填缺失學分）
+  // 注意：我們只保證 required + ge + spec 的準確學分
   // =======================
   function buildCreditLookup(){
     const map = new Map(); // normName -> credits
 
     // 1) 共同必修
-    const requiredMap = rule.requiredCourses || {};
     for (const [name, cr] of Object.entries(requiredMap)){
       const n = norm(name);
       const v = Number(cr);
-      if (n && Number.isFinite(v)) map.set(n, v);
+      if (n && Number.isFinite(v) && v > 0) map.set(n, v);
     }
 
-    // 2) 專業註記（只針對「目前選的 specializationId」建表）
-    if (specializationId){
-      const spec = (rules?.specializations || {})[specializationId] || null;
-      if (spec){
-        const addObj = (obj) => {
-          for (const [name, cr] of Object.entries(obj || {})){
-            const n = norm(name);
-            const v = Number(cr);
-            if (n && Number.isFinite(v)) map.set(n, v);
-          }
-        };
-        addObj(spec.prerequisites);
-        addObj(spec.required);
-        addObj(spec.electives);
-      }
+    // 2) 選定的專業註記
+    if (spec){
+      const addObj = (obj) => {
+        for (const [name, cr] of Object.entries(obj || {})){
+          const n = norm(name);
+          const v = Number(cr);
+          if (n && Number.isFinite(v) && v > 0) map.set(n, v);
+        }
+      };
+      addObj(spec.prerequisites);
+      addObj(spec.required);
+      addObj(spec.electives);
     }
 
     return map;
@@ -57,49 +77,47 @@ export function runAudit(
   const creditLookup = buildCreditLookup();
 
   // =======================
-  // 回填 passed 的 credits（嚴謹版）
-  // 規則：
-  // - 若使用者本來就有填 credits：用使用者的
-  // - 通識：固定 2
-  // - 其他：必須能在 creditLookup 找到，否則直接 throw（避免錯算）
+  // 回填 passed 的 credits（不再 throw，改成 warnings）
+  // 優先順序：
+  // 1) 使用者輸入 credits
+  // 2) 通識 => 2
+  // 3) 共同必修 / 專業註記課庫 => 查表
+  // 4) 仍未知 => credits=0 且列入 warnings（不影響頁面運作）
   // =======================
+  const warnings = {
+    unknownCredits: [] // { name, code }
+  };
+
   const passed = passedRaw.map((c) => {
     const userCr = Number(c.credits);
     const hasUserCredits = Number.isFinite(userCr) && userCr > 0;
 
     if (hasUserCredits) return { ...c, credits: userCr };
 
-    // 通識固定 2
+    // 通識固定 2（你規則已確定）
     if (c.category === "ge") return { ...c, credits: 2 };
 
-    // 其他課：必須查得到
     const n = norm(c.name);
     if (n && creditLookup.has(n)){
       return { ...c, credits: creditLookup.get(n) };
     }
 
-    // 查不到就中斷（嚴謹：避免產生錯的學分）
-    throw new Error(
-      `無法從資料庫判斷學分：${c.name}\n` +
-      `可能原因：課名與規則表不完全一致（全形/半形、空格、括號、（一）（二）等）\n` +
-      `請修正輸入課名或更新 rules.json 的課名。`
-    );
+    // 查不到：不炸掉，只警告，且不把它算進總學分（credits=0）
+    warnings.unknownCredits.push({ name: c.name, code: c.code });
+    return { ...c, credits: 0 };
   });
 
   // =======================
   // 總學分 / 通識學分（回填後）
+  // 注意：unknownCredits 會以 0 計算（不會誤算）
   // =======================
   const totalCredits = sumCredits(passed);
   const geCredits = sumCredits(passed.filter(c => c.category === "ge"));
 
   // =======================
-  // 共同必修檢核（exact match after normalize）
+  // 共同必修檢核（normalize 後 exact match）
   // =======================
-  const requiredMap = rule.requiredCourses || {}; // {課名:學分}
-
-  const takenNameSet = new Set(
-    passed.map(c => norm(c.name)).filter(Boolean)
-  );
+  const takenNameSet = new Set(passed.map(c => norm(c.name)).filter(Boolean));
 
   const requiredEntries = Object.keys(requiredMap).map(name => ({
     raw: name,
@@ -116,64 +134,65 @@ export function runAudit(
   // 專業註記檢核（選到才算）
   // =======================
   let specialization = null;
-  const specMap = rules.specializations || {};
 
   if (specializationId){
-    const spec = specMap[specializationId];
-
     if (!spec){
-      throw new Error(`找不到專業註記規則：${specializationId}`);
+      specialization = {
+        id: specializationId,
+        name: "(找不到此專業註記規則)",
+        ok: false,
+        error: `rules.specializations 找不到 id：${specializationId}`
+      };
+    } else {
+      const prereqMap = spec.prerequisites || {};
+      const reqMap = spec.required || {};
+      const elecMap = spec.electives || {};
+      const minCredits = spec.minCredits ?? 20;
+
+      const prereqNames = Object.keys(prereqMap);
+      const reqNames = Object.keys(reqMap);
+      const elecNames = Object.keys(elecMap);
+
+      const prereqMissing = prereqNames.filter(n => !takenNameSet.has(norm(n)));
+      const requiredMissing = reqNames.filter(n => !takenNameSet.has(norm(n)));
+
+      const allowedSet = new Set(
+        [...prereqNames, ...reqNames, ...elecNames].map(norm).filter(Boolean)
+      );
+
+      const takenInSpec = passed.filter(c => allowedSet.has(norm(c.name)));
+      const specCredits = sumCredits(takenInSpec);
+
+      const prereqOk = prereqMissing.length === 0;
+      const requiredOk = requiredMissing.length === 0;
+      const creditsOk = specCredits >= minCredits;
+
+      specialization = {
+        id: specializationId,
+        name: spec.name || specializationId,
+        credits: {
+          current: specCredits,
+          required: minCredits,
+          remaining: Math.max(0, minCredits - specCredits),
+          ok: creditsOk
+        },
+        prereq: {
+          total: prereqNames.length,
+          missing: prereqMissing,
+          ok: prereqOk
+        },
+        required: {
+          total: reqNames.length,
+          missing: requiredMissing,
+          ok: requiredOk
+        },
+        ok: prereqOk && requiredOk && creditsOk
+      };
     }
-
-    const prereqMap = spec.prerequisites || {};
-    const reqMap = spec.required || {};
-    const elecMap = spec.electives || {};
-    const minCredits = spec.minCredits ?? 20;
-
-    const prereqNames = Object.keys(prereqMap);
-    const reqNames = Object.keys(reqMap);
-    const elecNames = Object.keys(elecMap);
-
-    const prereqMissing = prereqNames.filter(n => !takenNameSet.has(norm(n)));
-    const requiredMissing = reqNames.filter(n => !takenNameSet.has(norm(n)));
-
-    const allowedSet = new Set(
-      [...prereqNames, ...reqNames, ...elecNames].map(norm).filter(Boolean)
-    );
-
-    const takenInSpec = passed.filter(c => allowedSet.has(norm(c.name)));
-    const specCredits = sumCredits(takenInSpec);
-
-    const prereqOk = prereqMissing.length === 0;
-    const requiredOk = requiredMissing.length === 0;
-    const creditsOk = specCredits >= minCredits;
-
-    specialization = {
-      id: specializationId,
-      name: spec.name || specializationId,
-      credits: {
-        current: specCredits,
-        required: minCredits,
-        remaining: Math.max(0, minCredits - specCredits),
-        ok: creditsOk
-      },
-      prereq: {
-        total: prereqNames.length,
-        missing: prereqMissing,
-        ok: prereqOk
-      },
-      required: {
-        total: reqNames.length,
-        missing: requiredMissing,
-        ok: requiredOk
-      },
-      ok: prereqOk && requiredOk && creditsOk
-    };
   }
 
   // =======================
-  // 114 乙組（保留：示意）
-  // 注意：major/minor category 你目前 parser 還沒做 mapping，所以這塊可能一直是 0
+  // 114 乙組（仍保留示意）
   // =======================
   let trackResult = null;
   if (year === "114" && track === "B"){
@@ -202,6 +221,7 @@ export function runAudit(
       missing: missingRequired
     },
     specialization,
-    trackResult
+    trackResult,
+    warnings
   };
 }
