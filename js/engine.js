@@ -1,87 +1,91 @@
 // js/engine.js
 import { normalizeCourseName } from "./normalize.js";
 
-export function runAudit(courses, rules, year, track = null, specializationId = null) {
+export function runAudit(
+  courses,
+  rules,
+  year,
+  track = null,
+  specializationId = null
+){
   const rule = rules[year];
   if (!rule) throw new Error("找不到規定版本：" + year);
 
   const passed = courses.filter(c => c.status === "passed");
+  const norm = s => normalizeCourseName(s);
 
-  const sumCredits = (arr) => arr.reduce((s, c) => s + (c.credits || 0), 0);
+  const sumCredits = arr => arr.reduce((s,c)=>s+(c.credits||0),0);
 
   const totalCredits = sumCredits(passed);
   const geCredits = sumCredits(passed.filter(c => c.category === "ge"));
 
-  // =============== 共同必修（正規化後 exact match） ===============
-  const requiredList = rule.requiredCourses || [];
+  // =======================
+  // 共同必修（requiredCourses：物件 課名->學分）
+  // =======================
+  const requiredMap = rule.requiredCourses || {}; // {name: credits}
 
   const takenNameSet = new Set(
-    passed.map(c => normalizeCourseName(c.name)).filter(Boolean)
+    passed.map(c => norm(c.name)).filter(Boolean)
   );
 
-  const requiredPairs = requiredList.map(raw => ({
-    raw,
-    norm: normalizeCourseName(raw)
+  const requiredEntries = Object.keys(requiredMap).map(name => ({
+    raw: name,
+    norm: norm(name)
   }));
 
-  const missingRequired = requiredPairs
+  const missingRequired = requiredEntries
     .filter(r => !takenNameSet.has(r.norm))
     .map(r => r.raw);
 
-  const requiredDone = requiredList.length - missingRequired.length;
+  const requiredDone = requiredEntries.length - missingRequired.length;
 
-  // =============== 專業註記/輔系（依 specializationId 計算） ===============
+  // =======================
+  // 專業註記（rules.specializations：全域）
+  // spec 格式：prerequisites/required/electives 都是 物件 課名->學分
+  // =======================
   let specialization = null;
+  const specMap = rules.specializations || {};
 
-  // rules 內建的 specializations（你剛剛 Step 1 加的）
-  const specMap = rule.specializations || {};
-
-  if (specializationId) {
+  if (specializationId){
     const spec = specMap[specializationId];
-    if (!spec) {
+
+    if (!spec){
       specialization = {
         id: specializationId,
-        name: "(找不到此專業註記/輔系規則)",
+        name: "(找不到此專業註記規則)",
         ok: false,
-        error: `rules.${year}.specializations 找不到 id：${specializationId}`
+        error: `rules.specializations 找不到 id：${specializationId}`
       };
     } else {
-      const prereq = spec.prereqCourses || [];
-      const req = spec.requiredCourses || [];
-      const elec = spec.electiveCourses || [];
+      const prereqMap = spec.prerequisites || {};
+      const reqMap = spec.required || {};
+      const elecMap = spec.electives || {};
       const minCredits = spec.minCredits ?? 20;
 
-      const norm = (s) => normalizeCourseName(s);
+      const prereqNames = Object.keys(prereqMap);
+      const reqNames = Object.keys(reqMap);
+      const elecNames = Object.keys(elecMap);
 
-      const prereqNorm = prereq.map(norm);
-      const reqNorm = req.map(norm);
-      const elecNorm = elec.map(norm);
+      const prereqMissing = prereqNames.filter(n => !takenNameSet.has(norm(n)));
+      const requiredMissing = reqNames.filter(n => !takenNameSet.has(norm(n)));
 
-      const prereqMissing = prereq.filter((name, i) => !takenNameSet.has(prereqNorm[i]));
-      const requiredMissing = req.filter((name, i) => !takenNameSet.has(reqNorm[i]));
+      // 專業註記可計入的課：先修+必修+（若有列）選修
+      const allowedSet = new Set(
+        [...prereqNames, ...reqNames, ...elecNames]
+          .map(norm)
+          .filter(Boolean)
+      );
 
-      // 計入該輔系/註記的課：先修 + 必修 +（如果有列）選修
-      const allowedSet = new Set([...prereqNorm, ...reqNorm, ...elecNorm].filter(Boolean));
-
-      const takenInSpec = passed.filter(c => {
-        const n = norm(c.name);
-        return allowedSet.has(n);
-      });
-
+      const takenInSpec = passed.filter(c => allowedSet.has(norm(c.name)));
       const specCredits = sumCredits(takenInSpec);
 
       const prereqOk = prereqMissing.length === 0;
       const requiredOk = requiredMissing.length === 0;
       const creditsOk = specCredits >= minCredits;
 
-      // 規則：先修與必修要全完成；學分不足可用（規則表列出的）選修補
-      // （對於你沒有列 electiveCourses 的系：通常必修/先修本身已>=20，不會卡）
-      const ok = prereqOk && requiredOk && creditsOk;
-
       specialization = {
         id: specializationId,
-        name: spec.name,
-        minCredits,
+        name: spec.name || specializationId,
         credits: {
           current: specCredits,
           required: minCredits,
@@ -89,23 +93,25 @@ export function runAudit(courses, rules, year, track = null, specializationId = 
           ok: creditsOk
         },
         prereq: {
-          total: prereq.length,
+          total: prereqNames.length,
           missing: prereqMissing,
           ok: prereqOk
         },
         required: {
-          total: req.length,
+          total: reqNames.length,
           missing: requiredMissing,
           ok: requiredOk
         },
-        ok
+        ok: prereqOk && requiredOk && creditsOk
       };
     }
   }
 
-  // =============== 114 乙組（保留你原本的示意） ===============
+  // =======================
+  // 114 乙組（保留：學分門檻示意）
+  // =======================
   let trackResult = null;
-  if (year === "114" && track === "B") {
+  if (year === "114" && track === "B"){
     const majorCredits = sumCredits(passed.filter(c => c.category === "major"));
     const minorCredits = sumCredits(passed.filter(c => c.category === "minor"));
     trackResult = {
@@ -127,7 +133,7 @@ export function runAudit(courses, rules, year, track = null, specializationId = 
     },
     required: {
       done: requiredDone,
-      total: requiredList.length,
+      total: requiredEntries.length,
       missing: missingRequired
     },
     specialization,
