@@ -62,13 +62,30 @@ async function loadRules(){
  * ---------------------------- */
 function buildReportText(year, track, audit){
   const lines = [];
-  lines.push(`🎓 畢業資格審核（Rule Engine）｜規定：${year}${year==="114" ? `｜${track==="A"?"甲組":"乙組"}` : ""}`);
+
+  /* ===== Header ===== */
+  lines.push(
+    `🎓 畢業資格審核（Rule Engine）｜規定：${year}` +
+    (year === "114" ? `｜${track === "A" ? "甲組" : "乙組"}` : "")
+  );
   lines.push("------------------------------------------------");
 
-  lines.push(`📌 總學分：${audit.total.current}/${audit.total.required}（尚差 ${Math.max(0, audit.total.required - audit.total.current)}）`);
-  lines.push(`📌 通識：${audit.ge.current}/${audit.ge.required}（尚差 ${Math.max(0, audit.ge.required - audit.ge.current)}）`);
+  /* ===== Overall credits ===== */
+  lines.push(
+    `📌 總學分：${audit.total.current}/${audit.total.required}` +
+    `（尚差 ${Math.max(0, audit.total.required - audit.total.current)}）`
+  );
 
-  lines.push(`📌 共同必修：${audit.required.done}/${audit.required.total}`);
+  lines.push(
+    `📌 通識：${audit.ge.current}/${audit.ge.required}` +
+    `（尚差 ${Math.max(0, audit.ge.required - audit.ge.current)}）`
+  );
+
+  /* ===== Required courses ===== */
+  lines.push(
+    `📌 共同必修：${audit.required.done}/${audit.required.total}`
+  );
+
   if (audit.required.missing?.length){
     lines.push("❗ 共同必修缺項：");
     audit.required.missing.forEach(c => lines.push(`- ${c}`));
@@ -76,25 +93,78 @@ function buildReportText(year, track, audit){
     lines.push("✅ 共同必修已全數完成");
   }
 
-  // 113：專業註記（目前仍是示意，因為嚴謹輸入只提供 code/name/credits，缺少「註記歸屬」對照表）
-  if (year === "113"){
+  /* ===== Specialization (專業註記) ===== */
+  if (audit.specialization){
+    const s = audit.specialization;
+
     lines.push("");
-    lines.push("📌 專業註記：目前為示意/待串接（需加上『課程→註記類別』對照表）");
+    lines.push(`📌 專業註記（${s.name}）`);
+    lines.push("（依該系輔系課程規定檢核，僅作為紫荊不分系專業註記進度參考）");
+
+    // 先修
+    if (s.prereq){
+      if (s.prereq.missing.length > 0){
+        lines.push(
+          `❗ 先修課程尚缺 ${s.prereq.missing.length} 門：`
+        );
+        s.prereq.missing.forEach(c => lines.push(`- ${c}`));
+      } else {
+        lines.push("✅ 先修課程已完成");
+      }
+    }
+
+    // 必修
+    if (s.required){
+      if (s.required.missing.length > 0){
+        lines.push(
+          `❗ 必修課程尚缺 ${s.required.missing.length} 門：`
+        );
+        s.required.missing.forEach(c => lines.push(`- ${c}`));
+      } else {
+        lines.push("✅ 必修課程已完成");
+      }
+    }
+
+    // Credits
+    lines.push(
+      `📌 已修專業註記學分：${s.credits.current} / ${s.credits.required}` +
+      `（尚差 ${Math.max(0, s.credits.required - s.credits.current)}）`
+    );
+
+    lines.push(
+      s.ok
+        ? "🎉 已達成專業註記修課門檻"
+        : "⚠️ 尚未達成專業註記修課門檻"
+    );
   }
 
-  // 114 乙組：如果 engine 有算 trackResult 就顯示
+  /* ===== Track B (114) ===== */
   if (year === "114" && track === "B" && audit.trackResult){
     const m = audit.trackResult.major;
     const n = audit.trackResult.minor;
+
     lines.push("");
-    lines.push(`📌 乙組主專業註記：${m.current}/${m.required}（尚差 ${Math.max(0, m.required - m.current)}）`);
-    lines.push(`📌 乙組輔專業/學程：${n.current}/${n.required}（尚差 ${Math.max(0, n.required - n.current)}）`);
+    lines.push("📌 114 乙組修業門檻（學分制）");
+
+    lines.push(
+      `- 主專業註記：${m.current}/${m.required}` +
+      `（尚差 ${Math.max(0, m.required - m.current)}）`
+    );
+
+    lines.push(
+      `- 輔專業／客製化學程：${n.current}/${n.required}` +
+      `（尚差 ${Math.max(0, n.required - n.current)}）`
+    );
   }
 
+  /* ===== Advisor hints ===== */
   lines.push("");
-  lines.push("💡 建議（示意）：");
-  lines.push("A. 優先補共同必修缺項（避免後續卡修）");
-  lines.push("B. 同步規劃通識與總學分缺口，讓大三更自由");
+  lines.push("💡 修課建議：");
+  lines.push("1. 優先補齊共同必修，避免後續學期卡修。");
+  if (audit.specialization && !audit.specialization.ok){
+    lines.push("2. 專業註記建議以『必修 → 補足學分』為修課優先順序。");
+  }
+  lines.push("3. 可搭配通識與自由選修，同步補足總學分需求。");
 
   return lines.join("\n");
 }
