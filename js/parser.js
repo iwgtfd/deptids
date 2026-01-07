@@ -1,14 +1,15 @@
-// js/parser.js  (Strict mode only)
+// js/parser.js  (Strict mode, but auto-credit from JSON)
 // 支援格式：
 // 1) CODE/NAME
 // 2) CODE/NAME/CREDITS
 //
-// 分類與學分策略（嚴謹）
-// - 通識：課碼 7 開頭 => category="ge"，credits=2（你已確認通識都是 2）
-// - 共同必修：以 rule.requiredCourses（物件：課名->學分）抓學分 + category="required"
+// 學分策略（嚴謹 + 自動補學分）
+// - 通識：課碼 7 開頭 => category="ge"，credits=2
+// - 共同必修：從 rules[year].requiredCourses（可為 物件 or 陣列）抓學分
+// - 專業註記（所有系的輔系/註記課庫）：從 rules.specializations 抓學分
 // - 其他課：
 //   - 若使用者有輸入學分 => 用輸入
-//   - 若沒輸入 => 視為錯行（要求補 /學分），避免亂算
+//   - 若沒輸入且資料庫也找不到 => 報錯（要求補 /學分）
 
 import { normalizeCourseName } from "./normalize.js";
 
@@ -29,7 +30,63 @@ function parseCredits(x){
   return null;
 }
 
-export function parseTranscriptToCourses(rawText, rule){
+/** 把 rule.requiredCourses（陣列 or 物件）整理成 normName -> credits */
+function buildRequiredNormCreditMap(rule){
+  const map = new Map();
+
+  // 新格式：物件 {課名: 學分}
+  if (rule && typeof rule.requiredCourses === "object" && !Array.isArray(rule.requiredCourses)){
+    for (const [name, cr] of Object.entries(rule.requiredCourses)){
+      const n = normalizeCourseName(name);
+      const v = Number(cr);
+      if (n && Number.isFinite(v)) map.set(n, v);
+    }
+    return map;
+  }
+
+  // 舊格式：陣列 ["課名"...]（沒有學分資訊只能保底 2）
+  if (Array.isArray(rule?.requiredCourses)){
+    for (const name of rule.requiredCourses){
+      const n = normalizeCourseName(name);
+      if (n) map.set(n, 2);
+    }
+  }
+  return map;
+}
+
+/** 把 rules.specializations 所有課程整理成 normName -> credits */
+function buildSpecCatalogNormCreditMap(rules){
+  const map = new Map();
+  const specMap = rules?.specializations || {};
+
+  for (const spec of Object.values(specMap)){
+    // 你現在 engine.js 用的格式：prerequisites/required/electives 都是 物件 課名->學分
+    const buckets = ["prerequisites", "required", "electives"];
+    for (const key of buckets){
+      const obj = spec?.[key] || {};
+      if (!obj || typeof obj !== "object") continue;
+
+      for (const [name, cr] of Object.entries(obj)){
+        const n = normalizeCourseName(name);
+        const v = Number(cr);
+        if (n && Number.isFinite(v)) map.set(n, v);
+      }
+    }
+
+    // 兼容你舊版本可能用：prereqCourses/requiredCourses/electiveCourses（陣列，無學分）
+    // 若遇到陣列，先不亂補（避免亂算）；你已經在 JSON 填學分了，理論上不會走到這裡
+  }
+
+  return map;
+}
+
+/**
+ * ✅ 新版：傳入 (rawText, rules, year)
+ */
+export function parseTranscriptToCourses(rawText, rules, year){
+  const rule = rules?.[year];
+  if (!rule) return { courses: [], errors: [{ lineNo: 0, line: "", reason: `找不到規定版本：${year}` }] };
+
   const text = (rawText || "").replace(/\r/g, "\n");
   const lines = text.split("\n").map(normalizeLine).filter(Boolean);
 
@@ -37,32 +94,13 @@ export function parseTranscriptToCourses(rawText, rule){
   const errors = [];
   const seen = new Set();
 
-  // 通識：你已確認「課碼 7 開頭」
   const gePrefixes = rule?.geCodePrefixes || ["7"];
 
-  // 共同必修：新格式為物件（課名->學分）；兼容舊格式（陣列）
-  const requiredMap =
-    (rule && typeof rule.requiredCourses === "object" && !Array.isArray(rule.requiredCourses))
-      ? rule.requiredCourses
-      : null;
+  // 共同必修查表（normName -> credits）
+  const requiredNormToCredit = buildRequiredNormCreditMap(rule);
 
-  const requiredList = Array.isArray(rule?.requiredCourses) ? rule.requiredCourses : [];
-
-  // 建立「必修查表（normalized）」：讓 parser 與 engine 一致
-  const requiredNormToCredit = new Map(); // normName -> credits
-  if (requiredMap){
-    for (const [name, cr] of Object.entries(requiredMap)){
-      const n = normalizeCourseName(name);
-      const v = Number(cr);
-      if (n && Number.isFinite(v)) requiredNormToCredit.set(n, v);
-    }
-  } else {
-    // 舊格式沒有學分，只能用 2 當保底（但你現在 rules.json 已是 map，這段只是兼容）
-    for (const name of requiredList){
-      const n = normalizeCourseName(name);
-      if (n) requiredNormToCredit.set(n, 2);
-    }
-  }
+  // 全域專業註記課庫查表（normName -> credits）
+  const specCatalogNormToCredit = buildSpecCatalogNormCreditMap(rules);
 
   for (let i = 0; i < lines.length; i++){
     const line = lines[i];
@@ -70,7 +108,6 @@ export function parseTranscriptToCourses(rawText, rule){
     // 跳過常見非課程行
     if (/^(步驟|建議：|目前|提醒：)/.test(line)) continue;
 
-    // 嚴謹：必須含 /
     if (!line.includes("/")){
       errors.push({
         lineNo: i + 1,
@@ -94,18 +131,17 @@ export function parseTranscriptToCourses(rawText, rule){
       errors.push({ lineNo: i + 1, line, reason: "課程代碼格式不合理" });
       continue;
     }
-
     if (!nameNorm || name.length < 2){
       errors.push({ lineNo: i + 1, line, reason: "課程名稱太短或無法辨識" });
       continue;
     }
 
-    // 去重：同 code+name 視為同一門
+    // 去重
     const key = `${code}__${nameNorm}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
-    // ===== 分類（嚴謹優先權：必修 > 通識 > 其他）=====
+    // ===== 分類（優先權：必修 > 通識 > 其他）=====
     const isRequired = requiredNormToCredit.has(nameNorm);
     const isGE = gePrefixes.some(p => code.startsWith(p));
 
@@ -113,11 +149,11 @@ export function parseTranscriptToCourses(rawText, rule){
     if (isGE) category = "ge";
     if (isRequired) category = "required";
 
-    // ===== 學分決定（嚴謹）=====
+    // ===== 學分決定 =====
     // 1) 使用者輸入
     let credits = parseCredits(parts[2] ?? null);
 
-    // 2) 共同必修：直接用資料庫學分（最可靠）
+    // 2) 共同必修：用 JSON
     if (credits == null && isRequired){
       credits = requiredNormToCredit.get(nameNorm);
     }
@@ -127,20 +163,27 @@ export function parseTranscriptToCourses(rawText, rule){
       credits = 2;
     }
 
-    // 4) 其他課：如果沒輸入學分 => 報錯（避免亂算）
+    // 4) 專業註記課庫：用 JSON（你想要的核心）
+    if (credits == null && specCatalogNormToCredit.has(nameNorm)){
+      credits = specCatalogNormToCredit.get(nameNorm);
+      // 這類課不一定要設 category（你也可以日後加 specialization tag）
+    }
+
+    // 5) 仍未知：嚴謹報錯
     if (credits == null){
       errors.push({
         lineNo: i + 1,
         line,
-        reason: "缺少學分：此課不在共同必修且非通識，請補第三欄 /學分（例：123456/資料結構/3）"
+        reason:
+          "缺少學分：此課不在共同必修/通識/專業註記課庫。請補第三欄 /學分，或確認課名是否與資料庫完全一致。"
       });
       continue;
     }
 
     courses.push({
       code,
-      name,     // 保留原始顯示用
-      credits,  // parser 已盡量給出可信 credits（非必修/非通識則要求使用者填）
+      name,
+      credits,
       status: "passed",
       category
     });
