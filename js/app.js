@@ -206,6 +206,8 @@ async function init(){
   $("btnRun")?.addEventListener("click", () => {
     const year = getRuleYear();
     const track = (year === "114") ? (getTrack114() || "B") : null;
+    const specializationId =
+    document.getElementById("specSelect")?.value || null;
 
     // Strict parse (no fallback)
     const parsed = strictParseFromTextarea(year, rules);
@@ -215,7 +217,13 @@ async function init(){
     }
 
     // Run audit
-    const audit = runAudit(parsed.courses, rules, year, track);
+    const audit = runAudit(
+  parsed.courses,
+  rules,
+  year,
+  track,
+  specializationId
+);
 
     // Update UI
     applyAuditToUI(year, track, audit);
