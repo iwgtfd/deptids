@@ -17,25 +17,27 @@
   </header>
 
   <main class="container grid">
-    <!-- 左欄：輸入與操作 -->
+    <!-- 左欄：輸入 -->
     <section class="card">
       <h2 class="card__title">步驟 1｜匯入或貼上成績單</h2>
 
       <div class="field">
-        <label class="label">上傳 PDF（第 2 步才接解析）</label>
+        <label class="label">上傳 PDF（尚未開放）</label>
         <input class="input" type="file" accept="application/pdf" disabled />
-        <div class="hint">目前先把介面做穩，PDF 解析會在後續步驟加入。</div>
       </div>
 
       <div class="field">
-        <label class="label">貼上成績單文字（格式：課程代碼/課程名稱）</label>
-        <textarea class="textarea" id="txtRaw" placeholder="把成績單內容貼在這裡（之後會解析成課程清單）…"></textarea>
-        <div class="hint">建議：先用「手動貼上文字」跑通流程，再接 PDF / OCR。</div>
+        <label class="label">貼上成績單文字（格式：課程代碼/課程名稱[/學分]）</label>
+        <textarea
+          class="textarea"
+          id="txtRaw"
+          placeholder="例如：&#10;701234/世界文明經典閱讀（一）&#10;123456/資料結構/3"
+        ></textarea>
       </div>
 
       <hr class="sep" />
 
-      <h2 class="card__title">步驟 2｜選擇規定版本</h2>
+      <h2 class="card__title">步驟 2｜選擇入學年度</h2>
 
       <div class="field">
         <div class="row">
@@ -52,14 +54,12 @@
         <div class="row" style="margin-top:10px;">
           <label class="pill">
             <input type="radio" name="track114" id="trackA" value="A" disabled />
-             114 甲組
-        </label>
-        <label class="pill">
+            114 甲組
+          </label>
+          <label class="pill">
             <input type="radio" name="track114" id="trackB" value="B" disabled />
             114 乙組
-        </label>
-
-          <div class="hint">第 3～4 步會依選擇動態啟用甲/乙組。</div>
+          </label>
         </div>
       </div>
 
@@ -67,67 +67,62 @@
 
       <h2 class="card__title">步驟 3｜選擇專業註記</h2>
 
-<div class="field">
-  <label class="label" for="specSelect">
-    專業註記
-  </label>
+      <div class="field">
+        <label class="label" for="specSelect">專業註記</label>
 
-  <select class="select" id="specSelect">
-    <option value="">（未選擇專業註記）</option>
-    <option value="cs_minor">中國文學學系</option>
-    <option value="cs_minor">外國語文學系</option>
-    <option value="cs_minor">歷史學系</option>
-    <option value="cs_minor">哲學系</option>
-    <option value="cs_minor">數學系</option>
-    <option value="cs_minor">生物醫學科學系</option>
-    <option value="cs_minor">地球與環境科學系</option>
-    <option value="cs_minor">化學暨生物學系</option>
-    <option value="cs_minor">物理學系</option>
-    <option value="labor_minor">社會福利學系</option>
-    <option value="labor_minor">勞工關習學系</option>
-    <option value="labor_minor">政治學系</option>
-    <option value="psych_minor">心理學系</option>
-    <option value="comm_minor">傳播學系</option>
-    <option value="cs_minor">資訊工程學系</option>
-    <option value="cs_minor">電機工程學系</option>
-    <option value="cs_minor">機械工程學系</option>
-    <option value="cs_minor">化學工程學系</option>
-    <option value="cs_minor">通訊工程學系</option>
-    <option value="ba_minor">企業管理學系</option>
-    <option value="ba_minor">經濟學系</option>
-    <option value="ba_minor">財務經融學系</option>
-    <option value="ba_minor">會計與資訊科技學系</option>
-    <option value="ba_minor">資訊管理學系</option>
-    <option value="ba_minor">法律學系</option>
-    <option value="ba_minor">財經法律學系</option>
-    <option value="adult_ed_minor">成人及繼續教育系</option>
-    <option value="crime_prevention_minor">犯罪防治學系</option>
-     <option value="crime_prevention_minor">運動競技學系</option>
-    <option value="comm_minor"></option>
-  </select>
+        <select class="select" id="specSelect">
+          <option value="">（未選擇專業註記）</option>
 
-  <div class="hint">
-    本系統以各系「輔系課程規定」作為專業註記之修課門檻，<br />
-    僅用於紫荊不分系修業進度檢核，非正式輔系資格審查。
-  </div>
-</div>
+          <!-- 已建規則 -->
+          <option value="cs_minor">資訊工程學系</option>
+          <option value="adult_ed_minor">成人及繼續教育學系</option>
+          <option value="ba_minor">企業管理學系</option>
+          <option value="labor_minor">勞工關係學系</option>
+          <option value="crime_prevention_minor">犯罪防治學系</option>
+          <option value="psych_minor">心理學系</option>
+          <option value="comm_minor">傳播學系</option>
 
-<hr class="sep" />
-
-      <div class="row">
-        <button class="btn btn--primary" id="btnRun" type="button">⚡ 產生審核結果</button>
-        <button class="btn" id="btnCopy" type="button">📋 複製報告</button>
+          <!-- 尚未建規則 -->
+          <option disabled>──────── 尚未建規則 ────────</option>
+          <option disabled>中國文學學系</option>
+          <option disabled>外國語文學系</option>
+          <option disabled>歷史學系</option>
+          <option disabled>哲學系</option>
+          <option disabled>數學系</option>
+          <option disabled>生物醫學科學系</option>
+          <option disabled>地球與環境科學系</option>
+          <option disabled>化學暨生物學系</option>
+          <option disabled>物理學系</option>
+          <option disabled>政治學系</option>
+          <option disabled>電機工程學系</option>
+          <option disabled>機械工程學系</option>
+          <option disabled>化學工程學系</option>
+          <option disabled>通訊工程學系</option>
+          <option disabled>經濟學系</option>
+          <option disabled>財務金融學系</option>
+          <option disabled>會計與資訊科技學系</option>
+          <option disabled>資訊管理學系</option>
+          <option disabled>法律學系</option>
+          <option disabled>財經法律學系</option>
+          <option disabled>運動競技學系</option>
+        </select>
       </div>
 
+      <hr class="sep" />
 
-      <div class="status status--muted">
-        目前進度：已完成 UI 骨架 ✅（下一步接 JS 事件與假資料）
+      <div class="row">
+        <button class="btn btn--primary" id="btnRun" type="button">
+          ⚡ 產生審核結果
+        </button>
+        <button class="btn" id="btnCopy" type="button">
+          📋 複製報告
+        </button>
       </div>
     </section>
 
-    <!-- 右欄：結果 / 視覺化 -->
+    <!-- 右欄：結果 -->
     <section class="card">
-      <h2 class="card__title">結果總覽（示意）</h2>
+      <h2 class="card__title">結果總覽</h2>
 
       <div class="kpi">
         <div class="kpi__card">
@@ -139,57 +134,54 @@
           <div class="kpi__label">共同必修完成</div>
         </div>
         <div class="kpi__card">
-          <div class="kpi__num"  id="kpiSpec">—</div>
+          <div class="kpi__num" id="kpiSpec">—</div>
           <div class="kpi__label">專業註記進度</div>
         </div>
       </div>
 
       <div class="block">
-        <div class="block__title">模組進度（示意）</div>
+        <div class="block__title">學分進度</div>
 
         <div class="progress">
           <div class="progress__meta">
-              <span>總學分</span><span class="muted" id="metaTotal">0 / 128</span>
-          </div>
-        <div class="progress__bar">
-            <div class="progress__fill" id="barTotal" style="width:0%"></div>
-        </div>
-
-          <div class="progress__meta">
-            <span>通識</span><span class="muted" id="metaGE">0 / 28</span>
+            <span>總學分</span>
+            <span class="muted" id="metaTotal">0 / 128</span>
           </div>
           <div class="progress__bar">
-             <div class="progress__fill" id="barGE" style="width:0%"></div>
+            <div class="progress__fill" id="barTotal"></div>
           </div>
 
           <div class="progress__meta">
-            <span>共同必修</span><span class="muted" id="metaReq">0 /（依規定）</span>
+            <span>通識</span>
+            <span class="muted" id="metaGE">0 / 28</span>
           </div>
           <div class="progress__bar">
-             <div class="progress__fill" id="barReq" style="width:0%"></div>
+            <div class="progress__fill" id="barGE"></div>
           </div>
-      </div>
 
-      <div class="block">
-        <div class="block__title">What-if 模擬器（第 5 步做）</div>
-        <div class="hint">
-          你之後會在這裡勾選「下學期想修的課」，系統會即時計算：各模組進度條怎麼變、是否達標、還差多少。
+          <div class="progress__meta">
+            <span>共同必修</span>
+            <span class="muted" id="metaReq">0 / —</span>
+          </div>
+          <div class="progress__bar">
+            <div class="progress__fill" id="barReq"></div>
+          </div>
         </div>
       </div>
 
       <div class="block">
-        <div class="block__title">顧問報告（示意）</div>
-     <pre class="report" id="reportText">(尚未產生)
-        - 這裡之後會顯示：缺哪些課、差幾學分、以及可行的選課方案 A/B</pre>
+        <div class="block__title">顧問報告</div>
+        <pre class="report" id="reportText">(尚未產生)</pre>
       </div>
     </section>
   </main>
 
   <footer class="footer">
     <div class="container muted">
-      提醒：本系統為輔助工具，正式仍以教務系統與系辦審核為準。
+      本系統為輔助工具，實際畢業資格仍以系辦與教務系統審核為準。
     </div>
   </footer>
-<script type="module" src="./js/app.js"></script>
+
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
