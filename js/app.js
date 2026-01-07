@@ -43,6 +43,35 @@ function setProgress(barId, metaId, current, required){
   if (bar) bar.style.width = `${Math.round(ratio * 100)}%`;
   if (meta) meta.textContent = `${current} / ${required}`;
 }
+function populateSpecSelect(rules, year){
+  const select = document.getElementById("specSelect");
+  if (!select) return;
+
+  // 記住目前選擇（切換 year 時保留用）
+  const prev = select.value;
+
+  // 清空選單
+  select.innerHTML = "";
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "（未選擇專業註記）";
+  select.appendChild(opt0);
+
+  const specMap = rules?.[year]?.specializations;
+  if (!specMap) return;
+
+  Object.entries(specMap).forEach(([id, spec]) => {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = spec.name || id;
+    select.appendChild(opt);
+  });
+
+  // 若切換 year 前有選、且新 year 仍存在該 id，就保留
+  if (prev && specMap[prev]){
+    select.value = prev;
+  }
+}
 
 /* ----------------------------
  * GitHub Pages-safe loader
