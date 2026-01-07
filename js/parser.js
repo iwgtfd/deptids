@@ -1,4 +1,4 @@
-// js/parser.js  (Strict mode, but auto-credit from JSON)
+// js/parser.js  (Strict mode, auto-credit from JSON)
 // 支援格式：
 // 1) CODE/NAME
 // 2) CODE/NAME/CREDITS
@@ -51,6 +51,7 @@ function buildRequiredNormCreditMap(rule){
       if (n) map.set(n, 2);
     }
   }
+
   return map;
 }
 
@@ -60,11 +61,10 @@ function buildSpecCatalogNormCreditMap(rules){
   const specMap = rules?.specializations || {};
 
   for (const spec of Object.values(specMap)){
-    // 你現在 engine.js 用的格式：prerequisites/required/electives 都是 物件 課名->學分
     const buckets = ["prerequisites", "required", "electives"];
     for (const key of buckets){
-      const obj = spec?.[key] || {};
-      if (!obj || typeof obj !== "object") continue;
+      const obj = spec?.[key];
+      if (!obj || typeof obj !== "object" || Array.isArray(obj)) continue;
 
       for (const [name, cr] of Object.entries(obj)){
         const n = normalizeCourseName(name);
@@ -72,9 +72,6 @@ function buildSpecCatalogNormCreditMap(rules){
         if (n && Number.isFinite(v)) map.set(n, v);
       }
     }
-
-    // 兼容你舊版本可能用：prereqCourses/requiredCourses/electiveCourses（陣列，無學分）
-    // 若遇到陣列，先不亂補（避免亂算）；你已經在 JSON 填學分了，理論上不會走到這裡
   }
 
   return map;
@@ -82,10 +79,16 @@ function buildSpecCatalogNormCreditMap(rules){
 
 /**
  * ✅ 新版：傳入 (rawText, rules, year)
+ * 回傳：{ courses: [], errors: [] }
  */
 export function parseTranscriptToCourses(rawText, rules, year){
   const rule = rules?.[year];
-  if (!rule) return { courses: [], errors: [{ lineNo: 0, line: "", reason: `找不到規定版本：${year}` }] };
+  if (!rule){
+    return {
+      courses: [],
+      errors: [{ lineNo: 0, line: "", reason: `找不到規定版本：${year}` }]
+    };
+  }
 
   const text = (rawText || "").replace(/\r/g, "\n");
   const lines = text.split("\n").map(normalizeLine).filter(Boolean);
@@ -94,12 +97,13 @@ export function parseTranscriptToCourses(rawText, rules, year){
   const errors = [];
   const seen = new Set();
 
+  // 通識：你已確認課碼 7 開頭
   const gePrefixes = rule?.geCodePrefixes || ["7"];
 
-  // 共同必修查表（normName -> credits）
+  // 共同必修查表
   const requiredNormToCredit = buildRequiredNormCreditMap(rule);
 
-  // 全域專業註記課庫查表（normName -> credits）
+  // 全域專業註記課庫查表
   const specCatalogNormToCredit = buildSpecCatalogNormCreditMap(rules);
 
   for (let i = 0; i < lines.length; i++){
@@ -108,6 +112,7 @@ export function parseTranscriptToCourses(rawText, rules, year){
     // 跳過常見非課程行
     if (/^(步驟|建議：|目前|提醒：)/.test(line)) continue;
 
+    // 嚴謹：必須含 /
     if (!line.includes("/")){
       errors.push({
         lineNo: i + 1,
@@ -136,12 +141,12 @@ export function parseTranscriptToCourses(rawText, rules, year){
       continue;
     }
 
-    // 去重
-    const key = `${code}__${nameNorm}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    // 去重：同 code + normName 視為同一門
+    const dedupeKey = `${code}__${nameNorm}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
 
-    // ===== 分類（優先權：必修 > 通識 > 其他）=====
+    // 分類優先權：必修 > 通識 > 其他
     const isRequired = requiredNormToCredit.has(nameNorm);
     const isGE = gePrefixes.some(p => code.startsWith(p));
 
@@ -149,27 +154,21 @@ export function parseTranscriptToCourses(rawText, rules, year){
     if (isGE) category = "ge";
     if (isRequired) category = "required";
 
-    // ===== 學分決定 =====
-    // 1) 使用者輸入
+    // 學分決定：輸入 > 必修表 > 通識固定 > 註記課庫 > 不知道就報錯
     let credits = parseCredits(parts[2] ?? null);
 
-    // 2) 共同必修：用 JSON
     if (credits == null && isRequired){
       credits = requiredNormToCredit.get(nameNorm);
     }
 
-    // 3) 通識固定 2
     if (credits == null && isGE){
       credits = 2;
     }
 
-    // 4) 專業註記課庫：用 JSON（你想要的核心）
     if (credits == null && specCatalogNormToCredit.has(nameNorm)){
       credits = specCatalogNormToCredit.get(nameNorm);
-      // 這類課不一定要設 category（你也可以日後加 specialization tag）
     }
 
-    // 5) 仍未知：嚴謹報錯
     if (credits == null){
       errors.push({
         lineNo: i + 1,
