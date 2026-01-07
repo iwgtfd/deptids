@@ -1,7 +1,6 @@
-// js/app.js  (ES Module)
+// js/app.js  (Strict input mode, ES Module)
 import { runAudit } from "./engine.js";
 import { parseTranscriptToCourses } from "./parser.js";
-
 
 /* ----------------------------
  * Utils
@@ -28,7 +27,8 @@ function setTrackEnabled(enabled){
     a.checked = false;
     b.checked = false;
   } else {
-    if (!a.checked && !b.checked) b.checked = true; // 預設乙組，demo 友善
+    // 預設乙組（demo 友善，你也可改成不預設）
+    if (!a.checked && !b.checked) b.checked = true;
   }
 }
 
@@ -48,6 +48,7 @@ function setProgress(barId, metaId, current, required){
  * GitHub Pages-safe loader
  * ---------------------------- */
 async function loadRules(){
+  // ✅ 對 GitHub Pages 子路徑（/deptids/）最穩的寫法
   const base = new URL(".", window.location.href);
   const url = new URL("data/rules.json", base);
 
@@ -56,83 +57,8 @@ async function loadRules(){
   return await res.json();
 }
 
-
-function buildFakeCourses(year, track){
-  if (year === "113"){
-    return [
-      // 通識（示意：10/28）
-      { name: "通識課A", credits: 2, status: "passed", category: "ge" },
-      { name: "通識課B", credits: 2, status: "passed", category: "ge" },
-      { name: "通識課C", credits: 2, status: "passed", category: "ge" },
-      { name: "通識課D", credits: 2, status: "passed", category: "ge" },
-      { name: "通識課E", credits: 2, status: "passed", category: "ge" },
-
-      // 共同必修（故意缺「永續能源與碳中和」「聯合國永續...」）
-      { name: "中正講座-向典範學習", credits: 2, status: "passed", category: "required" },
-      { name: "認識大學教育", credits: 2, status: "passed", category: "required" },
-      { name: "運算思維與程式設計", credits: 2, status: "passed", category: "required" },
-      { name: "紫荊學習規劃（一）", credits: 1, status: "passed", category: "required" },
-      { name: "紫荊學習規劃（二）", credits: 1, status: "passed", category: "required" },
-      { name: "英語閱讀與溝通", credits: 2, status: "passed", category: "required" },
-      { name: "職涯探索", credits: 2, status: "passed", category: "required" },
-
-      // 專業註記（示意：12/20）
-      { name: "專業註記課1", credits: 3, status: "passed", category: "specialization" },
-      { name: "專業註記課2", credits: 3, status: "passed", category: "specialization" },
-      { name: "專業註記課3", credits: 3, status: "passed", category: "specialization" },
-      { name: "專業註記課4", credits: 3, status: "passed", category: "specialization" },
-
-      // 自由選修補總學分（示意）
-      { name: "自由選修A", credits: 20, status: "passed", category: "free" },
-      { name: "自由選修B", credits: 20, status: "passed", category: "free" },
-      { name: "自由選修C", credits: 20, status: "passed", category: "free" }
-    ];
-  }
-
-  // 114：demo 先跑乙組
-  if (year === "114" && (track === "B" || !track)){
-    return [
-      // 通識（示意：8/28）
-      { name: "通識課A", credits: 2, status: "passed", category: "ge" },
-      { name: "通識課B", credits: 2, status: "passed", category: "ge" },
-      { name: "通識課C", credits: 2, status: "passed", category: "ge" },
-      { name: "通識課D", credits: 2, status: "passed", category: "ge" },
-
-      // 共同必修（先放幾門，故意缺一些）
-      { name: "運算思維與程式設計", credits: 2, status: "passed", category: "required" },
-      { name: "統計學", credits: 2, status: "passed", category: "required" },
-      { name: "人工智慧導論與應用", credits: 2, status: "passed", category: "required" },
-
-      // 主專業（示意：28/44）
-      { name: "主專業課1", credits: 3, status: "passed", category: "major" },
-      { name: "主專業課2", credits: 3, status: "passed", category: "major" },
-      { name: "主專業課3", credits: 3, status: "passed", category: "major" },
-      { name: "主專業課4", credits: 3, status: "passed", category: "major" },
-      { name: "主專業課5", credits: 3, status: "passed", category: "major" },
-      { name: "主專業課6", credits: 3, status: "passed", category: "major" },
-      { name: "主專業課7", credits: 3, status: "passed", category: "major" },
-      { name: "主專業課8", credits: 4, status: "passed", category: "major" },
-      { name: "主專業課9", credits: 3, status: "passed", category: "major" }, // total 28
-
-      // 輔專業/學程（示意：6/20）
-      { name: "輔專業課1", credits: 3, status: "passed", category: "minor" },
-      { name: "輔專業課2", credits: 3, status: "passed", category: "minor" },
-
-      // 自由選修補總學分
-      { name: "自由選修A", credits: 20, status: "passed", category: "free" },
-      { name: "自由選修B", credits: 20, status: "passed", category: "free" },
-      { name: "自由選修C", credits: 20, status: "passed", category: "free" }
-    ];
-  }
-
-  // 114 甲組（先不展示詳細，避免規則不完整造成混亂）
-  return [
-    { name: "自由選修A", credits: 10, status: "passed", category: "free" }
-  ];
-}
-
 /* ----------------------------
- * Report builder
+ * Report builder (human-friendly but still structured)
  * ---------------------------- */
 function buildReportText(year, track, audit){
   const lines = [];
@@ -150,12 +76,13 @@ function buildReportText(year, track, audit){
     lines.push("✅ 共同必修已全數完成");
   }
 
-  if (year === "113" && audit.specialization){
-    const s = audit.specialization;
+  // 113：專業註記（目前仍是示意，因為嚴謹輸入只提供 code/name/credits，缺少「註記歸屬」對照表）
+  if (year === "113"){
     lines.push("");
-    lines.push(`📌 專業註記（示意）：${s.current}/${s.required}（${s.ok ? "✅ 達標" : `尚差 ${Math.max(0, s.required - s.current)}`}）`);
+    lines.push("📌 專業註記：目前為示意/待串接（需加上『課程→註記類別』對照表）");
   }
 
+  // 114 乙組：如果 engine 有算 trackResult 就顯示
   if (year === "114" && track === "B" && audit.trackResult){
     const m = audit.trackResult.major;
     const n = audit.trackResult.minor;
@@ -167,7 +94,7 @@ function buildReportText(year, track, audit){
   lines.push("");
   lines.push("💡 建議（示意）：");
   lines.push("A. 優先補共同必修缺項（避免後續卡修）");
-  lines.push("B. 同步規劃通識與專業註記缺口，讓大三更自由");
+  lines.push("B. 同步規劃通識與總學分缺口，讓大三更自由");
 
   return lines.join("\n");
 }
@@ -180,21 +107,19 @@ function applyAuditToUI(year, track, audit){
   $("kpiCredits").textContent = `${audit.total.current}`;
   $("kpiReq").textContent = `${audit.required.done}/${audit.required.total}`;
 
-  if (year === "113" && audit.specialization){
-    $("kpiSpec").textContent = `${audit.specialization.current}/${audit.specialization.required}`;
-  } else if (year === "114" && track === "B" && audit.trackResult){
+  // 專業註記 KPI：目前嚴謹模式下沒做註記 mapping，先顯示 —
+  if (year === "114" && track === "B" && audit.trackResult){
     $("kpiSpec").textContent = `主 ${audit.trackResult.major.current}/${audit.trackResult.major.required}、輔 ${audit.trackResult.minor.current}/${audit.trackResult.minor.required}`;
   } else {
     $("kpiSpec").textContent = "—";
   }
 
-  // Progress
+  // Progress bars
   setProgress("barTotal", "metaTotal", audit.total.current, audit.total.required);
   setProgress("barGE", "metaGE", audit.ge.current, audit.ge.required);
 
-  // required progress as ratio of course-count
-  const ratio = audit.required.total > 0 ? clamp01(audit.required.done / audit.required.total) : 0;
-  $("barReq").style.width = `${Math.round(ratio * 100)}%`;
+  const reqRatio = audit.required.total > 0 ? clamp01(audit.required.done / audit.required.total) : 0;
+  $("barReq").style.width = `${Math.round(reqRatio * 100)}%`;
   $("metaReq").textContent = `${audit.required.done} / ${audit.required.total}`;
 
   // Report
@@ -214,10 +139,51 @@ function copyReport(){
 }
 
 /* ----------------------------
+ * Strict parse + validate
+ * ---------------------------- */
+function strictParseFromTextarea(year, rules){
+  const rawText = $("txtRaw")?.value || "";
+  if (rawText.trim().length < 5){
+    return {
+      ok: false,
+      message: "請貼上課程清單，格式：課程代碼/課程名稱（可加 /學分）"
+    };
+  }
+
+  const parsed = parseTranscriptToCourses(rawText, rules[year]);
+  const courses = parsed.courses || [];
+  const errors = parsed.errors || [];
+
+  if (errors.length > 0){
+    const preview = errors.slice(0, 6)
+      .map(e => `第 ${e.lineNo} 行：${e.reason}\n  ${e.line}`)
+      .join("\n\n");
+
+    return {
+      ok: false,
+      message:
+        `輸入格式有誤：共 ${errors.length} 行不符合格式。\n\n` +
+        `請用「課程代碼/課程名稱」(可加 /學分)\n\n` +
+        `前幾筆錯誤：\n${preview}\n\n` +
+        `（已停止計算，請修正後再產生審核結果）`
+    };
+  }
+
+  if (courses.length === 0){
+    return {
+      ok: false,
+      message: "未解析到任何課程。請確認格式為：課程代碼/課程名稱（可加 /學分）"
+    };
+  }
+
+  return { ok: true, courses };
+}
+
+/* ----------------------------
  * Init
  * ---------------------------- */
 async function init(){
-  // 先處理 114 track 啟用/禁用
+  // Track enable/disable
   setTrackEnabled(getRuleYear() === "114");
   document.querySelectorAll('input[name="ruleYear"]').forEach(el => {
     el.addEventListener("change", () => {
@@ -226,7 +192,7 @@ async function init(){
     });
   });
 
-  // 載入規則
+  // Load rules
   let rules = null;
   try{
     rules = await loadRules();
@@ -236,31 +202,26 @@ async function init(){
     return;
   }
 
-  // 綁事件：Run
+  // Bind run
   $("btnRun")?.addEventListener("click", () => {
     const year = getRuleYear();
     const track = (year === "114") ? (getTrack114() || "B") : null;
 
-    const rawText = document.getElementById("txtRaw")?.value || "";
-    let courses = [];
-
-    if (rawText.trim().length >= 20){
-     // 有貼成績單文字：用 parser 解析
-    courses = parseTranscriptToCourses(rawText, rules[year]);
-    } 
-    else {
-      // 沒貼文字：用假資料當備援（demo 不會掛）
-    courses = buildFakeCourses(year, track);
+    // Strict parse (no fallback)
+    const parsed = strictParseFromTextarea(year, rules);
+    if (!parsed.ok){
+      alert(parsed.message);
+      return;
     }
 
-    // 真正跑規則引擎
-    const audit = runAudit(courses, rules, year, track);
+    // Run audit
+    const audit = runAudit(parsed.courses, rules, year, track);
 
-    // 更新 UI
+    // Update UI
     applyAuditToUI(year, track, audit);
   });
 
-  // 綁事件：Copy
+  // Bind copy
   $("btnCopy")?.addEventListener("click", copyReport);
 }
 
