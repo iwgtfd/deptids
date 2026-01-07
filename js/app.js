@@ -165,6 +165,7 @@ function applyAuditToUI(year, track, audit){
 
   setProgress("barTotal", "metaTotal", audit.total.current, audit.total.required);
   setProgress("barGE", "metaGE", audit.ge.current, audit.ge.required);
+  setProgress("barFree", "metaFree", audit.free.current, audit.free.required);
 
   const reqRatio = audit.required.total > 0 ? clamp01(audit.required.done / audit.required.total) : 0;
   $("barReq").style.width = `${Math.round(reqRatio * 100)}%`;
