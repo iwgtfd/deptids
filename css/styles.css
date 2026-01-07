@@ -31,6 +31,15 @@ body{
   padding: 0 24px;
 }
 
+.select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+}
+
 /* 頂部列 */
 .topbar{
   position: sticky;
