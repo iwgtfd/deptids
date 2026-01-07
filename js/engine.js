@@ -1,83 +1,116 @@
 // js/engine.js
 import { normalizeCourseName } from "./normalize.js";
 
-export function runAudit(courses, rules, year, track = null) {
+export function runAudit(courses, rules, year, track = null, specializationId = null) {
   const rule = rules[year];
   if (!rule) throw new Error("找不到規定版本：" + year);
 
-  const passed = courses.filter((c) => c.status === "passed");
+  const passed = courses.filter(c => c.status === "passed");
 
   const sumCredits = (arr) => arr.reduce((s, c) => s + (c.credits || 0), 0);
 
   const totalCredits = sumCredits(passed);
-  const geCredits = sumCredits(passed.filter((c) => c.category === "ge"));
+  const geCredits = sumCredits(passed.filter(c => c.category === "ge"));
 
-  // =========================
-  // 共同必修：normalize 後 exact match
-  // =========================
+  // =============== 共同必修（正規化後 exact match） ===============
   const requiredList = rule.requiredCourses || [];
 
-  // 使用者已修課名（正規化後）集合
   const takenNameSet = new Set(
-    passed.map((c) => normalizeCourseName(c.name)).filter(Boolean)
+    passed.map(c => normalizeCourseName(c.name)).filter(Boolean)
   );
 
-  // 規則表必修課名（原文 + 正規化）
-  const requiredPairs = requiredList.map((raw) => ({
+  const requiredPairs = requiredList.map(raw => ({
     raw,
-    norm: normalizeCourseName(raw),
+    norm: normalizeCourseName(raw)
   }));
 
-  // 缺項：用規則表原文輸出（UI 顯示更正式）
   const missingRequired = requiredPairs
-    .filter((r) => !takenNameSet.has(r.norm))
-    .map((r) => r.raw);
+    .filter(r => !takenNameSet.has(r.norm))
+    .map(r => r.raw);
 
   const requiredDone = requiredList.length - missingRequired.length;
 
-  // 額外提示：使用者輸入但「不是共同必修清單中的任何一門」（正規化後仍找不到）
-  // 這可以用來提醒「你是不是打錯課名」
-  const requiredNormSet = new Set(requiredPairs.map((x) => x.norm));
-  const unrecognizedInputs = [];
-  for (const c of passed) {
-    const n = normalizeCourseName(c.name);
-    if (!n) continue;
+  // =============== 專業註記/輔系（依 specializationId 計算） ===============
+  let specialization = null;
 
-    // 如果不在 required 清單內，就列入提醒
-    // （注意：這會包含通識/選修等非必修課名；若你只想針對「看起來像必修」才提示，可再加白名單/關鍵字）
-    if (!requiredNormSet.has(n)) {
-      unrecognizedInputs.push(c.name);
+  // rules 內建的 specializations（你剛剛 Step 1 加的）
+  const specMap = rule.specializations || {};
+
+  if (specializationId) {
+    const spec = specMap[specializationId];
+    if (!spec) {
+      specialization = {
+        id: specializationId,
+        name: "(找不到此專業註記/輔系規則)",
+        ok: false,
+        error: `rules.${year}.specializations 找不到 id：${specializationId}`
+      };
+    } else {
+      const prereq = spec.prereqCourses || [];
+      const req = spec.requiredCourses || [];
+      const elec = spec.electiveCourses || [];
+      const minCredits = spec.minCredits ?? 20;
+
+      const norm = (s) => normalizeCourseName(s);
+
+      const prereqNorm = prereq.map(norm);
+      const reqNorm = req.map(norm);
+      const elecNorm = elec.map(norm);
+
+      const prereqMissing = prereq.filter((name, i) => !takenNameSet.has(prereqNorm[i]));
+      const requiredMissing = req.filter((name, i) => !takenNameSet.has(reqNorm[i]));
+
+      // 計入該輔系/註記的課：先修 + 必修 +（如果有列）選修
+      const allowedSet = new Set([...prereqNorm, ...reqNorm, ...elecNorm].filter(Boolean));
+
+      const takenInSpec = passed.filter(c => {
+        const n = norm(c.name);
+        return allowedSet.has(n);
+      });
+
+      const specCredits = sumCredits(takenInSpec);
+
+      const prereqOk = prereqMissing.length === 0;
+      const requiredOk = requiredMissing.length === 0;
+      const creditsOk = specCredits >= minCredits;
+
+      // 規則：先修與必修要全完成；學分不足可用（規則表列出的）選修補
+      // （對於你沒有列 electiveCourses 的系：通常必修/先修本身已>=20，不會卡）
+      const ok = prereqOk && requiredOk && creditsOk;
+
+      specialization = {
+        id: specializationId,
+        name: spec.name,
+        minCredits,
+        credits: {
+          current: specCredits,
+          required: minCredits,
+          remaining: Math.max(0, minCredits - specCredits),
+          ok: creditsOk
+        },
+        prereq: {
+          total: prereq.length,
+          missing: prereqMissing,
+          ok: prereqOk
+        },
+        required: {
+          total: req.length,
+          missing: requiredMissing,
+          ok: requiredOk
+        },
+        ok
+      };
     }
   }
 
-  // =========================
-  // 專業註記（113）
-  // =========================
-  let specialization = null;
-  if (year === "113") {
-    const specCredits = sumCredits(
-      passed.filter((c) => c.category === "specialization")
-    );
-    specialization = {
-      current: specCredits,
-      required: rule.specialization?.minCredits ?? 0,
-      ok: specCredits >= (rule.specialization?.minCredits ?? 0),
-    };
-  }
-
-  // =========================
-  // 114 乙組（示意）
-  // =========================
+  // =============== 114 乙組（保留你原本的示意） ===============
   let trackResult = null;
   if (year === "114" && track === "B") {
-    const majorCredits = sumCredits(passed.filter((c) => c.category === "major"));
-    const minorCredits = sumCredits(passed.filter((c) => c.category === "minor"));
+    const majorCredits = sumCredits(passed.filter(c => c.category === "major"));
+    const minorCredits = sumCredits(passed.filter(c => c.category === "minor"));
     trackResult = {
       major: { current: majorCredits, required: rule.tracks?.B?.majorCredits ?? 0 },
-      minor: {
-        current: minorCredits,
-        required: rule.tracks?.B?.minorOrProgramCredits ?? 0,
-      },
+      minor: { current: minorCredits, required: rule.tracks?.B?.minorOrProgramCredits ?? 0 }
     };
   }
 
@@ -85,21 +118,19 @@ export function runAudit(courses, rules, year, track = null) {
     total: {
       current: totalCredits,
       required: rule.totalCredits,
-      ok: totalCredits >= rule.totalCredits,
+      ok: totalCredits >= rule.totalCredits
     },
     ge: {
       current: geCredits,
       required: rule.geCredits,
-      ok: geCredits >= rule.geCredits,
+      ok: geCredits >= rule.geCredits
     },
     required: {
       done: requiredDone,
       total: requiredList.length,
-      missing: missingRequired,
-      // 讓 app.js 顯示提醒（你前面那段 buildReportText 加上即可）
-      unrecognizedInputs,
+      missing: missingRequired
     },
     specialization,
-    trackResult,
+    trackResult
   };
 }
