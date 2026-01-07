@@ -1,154 +1,143 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>紫荊不分系 - AI Chatbot 整合示範</title>
-  <style>
-    /* === 全域與基礎設定 === */
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #F5F5F7; color: #1A1A1A; line-height: 1.6; }
-
-    /* Header 配色 #223B57 */
-    header {
-      background: #223B57;
-      color: #fff;
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      position: sticky; top: 0; z-index: 10;
-    }
-    .logo { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
-    nav a { color: rgba(255,255,255,0.85); text-decoration: none; margin-left: 20px; font-size: 14px; transition: 0.3s; }
-    nav a:hover { color: #fff; text-decoration: underline; }
-
-    main { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-
-    /* 區塊樣式 */
-    .hero, .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      margin-bottom: 24px;
-      border: 1px solid #e0e0e0;
-    }
-    h1, h2 { color: #1F3556; margin-bottom: 12px; font-weight: 700; }
-    h2 { font-size: 18px; border-left: 4px solid #1C2A3A; padding-left: 10px; }
-    p, li { color: #4A4A4A; font-size: 14px; }
-    ul { margin-left: 20px; margin-top: 8px; }
-    .btn {
-      display: inline-block;
-      background: #244A73;
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 13px;
-      margin-top: 12px;
-      transition: background 0.3s;
-    }
-    .btn:hover { background: #1C2A3A; }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    footer { text-align: center; padding: 40px; color: #888; font-size: 12px; background: #eaeaea; }
-
-  
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>紫荊不分系｜畢業資格審核與修課顧問（Beta）</title>
+  <link rel="stylesheet" href="./css/styles.css" />
 </head>
 
 <body>
-  <header>
-    <div class="logo">紫荊不分系 AI Portal</div>
-    <nav>
-      <a href="#">系所公告</a>
-      <a href="#">課程地圖</a>
-      <a href="#">教授介紹</a>
-    </nav>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <div class="brand__title">🎓 紫荊不分系｜畢業資格審核與修課顧問</div>
+        <div class="brand__subtitle">Beta｜先做穩定的「規則引擎 + What-if 模擬器」</div>
+      </div>
+    </div>
   </header>
 
-  <main>
-    <section class="hero">
-      <h1>歡迎來到紫荊不分系</h1>
-      <p>右下角已新增「AI 客服」按鈕。點擊即可開啟對話視窗，模擬與系所 AI 助教的互動情境。</p>
+  <main class="container grid">
+    <!-- 左欄：輸入與操作 -->
+    <section class="card">
+      <h2 class="card__title">步驟 1｜匯入或貼上成績單</h2>
+
+      <div class="field">
+        <label class="label">上傳 PDF（第 2 步才接解析）</label>
+        <input class="input" type="file" accept="application/pdf" disabled />
+        <div class="hint">目前先把介面做穩，PDF 解析會在後續步驟加入。</div>
+      </div>
+
+      <div class="field">
+        <label class="label">貼上成績單文字（可先用手動貼上跑 MVP）</label>
+        <textarea class="textarea" id="txtRaw" placeholder="把成績單內容貼在這裡（之後會解析成課程清單）…"></textarea>
+        <div class="hint">建議：先用「手動貼上文字」跑通流程，再接 PDF / OCR。</div>
+      </div>
+
+      <hr class="sep" />
+
+      <h2 class="card__title">步驟 2｜選擇規定版本</h2>
+
+      <div class="field">
+        <div class="row">
+          <label class="pill">
+            <input type="radio" name="ruleYear" value="113" checked />
+            113 入學
+          </label>
+          <label class="pill">
+            <input type="radio" name="ruleYear" value="114" />
+            114 入學
+          </label>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <label class="pill">
+            <input type="radio" name="track114" value="A" disabled />
+            114 甲組（未啟用）
+          </label>
+          <label class="pill">
+            <input type="radio" name="track114" value="B" disabled />
+            114 乙組（未啟用）
+          </label>
+          <div class="hint">第 3～4 步會依選擇動態啟用甲/乙組。</div>
+        </div>
+      </div>
+
+      <hr class="sep" />
+
+      <div class="row">
+        <button class="btn btn--primary" type="button" disabled>⚡ 產生審核結果（未啟用）</button>
+        <button class="btn" type="button" disabled>📋 複製報告（未啟用）</button>
+      </div>
+
+      <div class="status status--muted">
+        目前進度：已完成 UI 骨架 ✅（下一步接 JS 事件與假資料）
+      </div>
     </section>
 
-    <section class="grid">
-      <div class="card">
-        <h2>最新消息</h2>
-        <p>113 學年度跨領域學程申請說明會即將開始。</p>
-        <a href="#" class="btn">閱讀更多</a>
+    <!-- 右欄：結果 / 視覺化 -->
+    <section class="card">
+      <h2 class="card__title">結果總覽（示意）</h2>
+
+      <div class="kpi">
+        <div class="kpi__card">
+          <div class="kpi__num">—</div>
+          <div class="kpi__label">已取得學分</div>
+        </div>
+        <div class="kpi__card">
+          <div class="kpi__num">—</div>
+          <div class="kpi__label">共同必修完成</div>
+        </div>
+        <div class="kpi__card">
+          <div class="kpi__num">—</div>
+          <div class="kpi__label">專業註記進度</div>
+        </div>
       </div>
-      <div class="card">
-        <h2>招生資訊</h2>
-        <p>歡迎高中生透過特殊選才管道加入我們。</p>
-        <a href="#" class="btn">下載簡章</a>
+
+      <div class="block">
+        <div class="block__title">模組進度（示意）</div>
+
+        <div class="progress">
+          <div class="progress__meta">
+            <span>總學分</span><span class="muted">0 / 128</span>
+          </div>
+          <div class="progress__bar"><div class="progress__fill" style="width:0%"></div></div>
+        </div>
+
+        <div class="progress">
+          <div class="progress__meta">
+            <span>通識</span><span class="muted">0 / 28</span>
+          </div>
+          <div class="progress__bar"><div class="progress__fill" style="width:0%"></div></div>
+        </div>
+
+        <div class="progress">
+          <div class="progress__meta">
+            <span>共同必修</span><span class="muted">0 /（依規定）</span>
+          </div>
+          <div class="progress__bar"><div class="progress__fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block__title">What-if 模擬器（第 5 步做）</div>
+        <div class="hint">
+          你之後會在這裡勾選「下學期想修的課」，系統會即時計算：各模組進度條怎麼變、是否達標、還差多少。
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="block__title">顧問報告（示意）</div>
+        <pre class="report">(尚未產生)
+- 這裡之後會顯示：缺哪些課、差幾學分、以及可行的選課方案 A/B</pre>
       </div>
     </section>
   </main>
 
-
-
-  <script>
-    const toggleBtn = document.getElementById("toggleBtn");
-    const closeBtn = document.getElementById("closeBtn");
-    const chatWindow = document.getElementById("chatWindow");
-    const sendBtn = document.getElementById("sendBtn");
-    const userInput = document.getElementById("userInput");
-    const chatBody = document.getElementById("chatBody");
-
-    function toggleChat() {
-      chatWindow.classList.toggle("active");
-      if (chatWindow.classList.contains("active")) userInput.focus();
-    }
-
-    toggleBtn.addEventListener("click", toggleChat);
-    closeBtn.addEventListener("click", toggleChat);
-
-    function addMessage(text, sender) {
-      if (sender === "bot") {
-        const label = document.createElement("div");
-        label.classList.add("bot-label");
-        label.innerText = "AI Assistant";
-        chatBody.appendChild(label);
-      }
-
-      const msgDiv = document.createElement("div");
-      msgDiv.classList.add("message", sender);
-      msgDiv.innerHTML = String(text);
-      chatBody.appendChild(msgDiv);
-
-      chatBody.scrollTop = chatBody.scrollHeight;
-    }
-
-    function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
-
-      addMessage(text, "user");
-      userInput.value = "";
-
-      setTimeout(() => {
-        const reply =
-          "這是一個 UI 示範頁面。未來連接真實 AI 模型後，我就能針對「" +
-          text +
-          "」提供準確回答囉！";
-        addMessage(reply, "bot");
-      }, 800);
-    }
-
-    sendBtn.addEventListener("click", sendMessage);
-    userInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-  </script>
-  
-  
-    <script src="https://cdn.botpress.cloud/webchat/v3.5/inject.js"></script>
-<script src="https://files.bpcontent.cloud/2025/12/18/02/20251218025304-S564FEAI.js" defer></script>
-    
-    
+  <footer class="footer">
+    <div class="container muted">
+      提醒：本系統為輔助工具，正式仍以教務系統與系辦審核為準。
+    </div>
+  </footer>
 </body>
 </html>
