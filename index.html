@@ -12,7 +12,6 @@
     <div class="container">
       <div class="brand">
         <div class="brand__title">🎓 紫荊不分系｜畢業資格審核與修課顧問</div>
-        <div class="brand__subtitle">Beta｜先做穩定的「規則引擎 + What-if 模擬器」</div>
       </div>
     </div>
   </header>
@@ -52,13 +51,14 @@
 
         <div class="row" style="margin-top:10px;">
           <label class="pill">
-            <input type="radio" name="track114" value="A" disabled />
-            114 甲組（未啟用）
-          </label>
-          <label class="pill">
-            <input type="radio" name="track114" value="B" disabled />
-            114 乙組（未啟用）
-          </label>
+            <input type="radio" name="track114" id="trackA" value="A" disabled />
+             114 甲組
+        </label>
+        <label class="pill">
+            <input type="radio" name="track114" id="trackB" value="B" disabled />
+            114 乙組
+        </label>
+
           <div class="hint">第 3～4 步會依選擇動態啟用甲/乙組。</div>
         </div>
       </div>
@@ -66,9 +66,10 @@
       <hr class="sep" />
 
       <div class="row">
-        <button class="btn btn--primary" type="button" disabled>⚡ 產生審核結果（未啟用）</button>
-        <button class="btn" type="button" disabled>📋 複製報告（未啟用）</button>
+        <button class="btn btn--primary" id="btnRun" type="button">⚡ 產生審核結果</button>
+        <button class="btn" id="btnCopy" type="button">📋 複製報告</button>
       </div>
+
 
       <div class="status status--muted">
         目前進度：已完成 UI 骨架 ✅（下一步接 JS 事件與假資料）
@@ -81,16 +82,16 @@
 
       <div class="kpi">
         <div class="kpi__card">
-          <div class="kpi__num">—</div>
+          <div class="kpi__num" id="kpiCredits">—</div>
           <div class="kpi__label">已取得學分</div>
         </div>
         <div class="kpi__card">
-          <div class="kpi__num">—</div>
+          <div class="kpi__num" id="kpiReq">—</div>
           <div class="kpi__label">共同必修完成</div>
         </div>
         <div class="kpi__card">
           <div class="kpi__num">—</div>
-          <div class="kpi__label">專業註記進度</div>
+          <div class="kpi__label" id="kpiSpec">專業註記進度</div>
         </div>
       </div>
 
@@ -99,24 +100,25 @@
 
         <div class="progress">
           <div class="progress__meta">
-            <span>總學分</span><span class="muted">0 / 128</span>
+              <span>總學分</span><span class="muted" id="metaTotal">0 / 128</span>
           </div>
-          <div class="progress__bar"><div class="progress__fill" style="width:0%"></div></div>
+        <div class="progress__bar">
+            <div class="progress__fill" id="barTotal" style="width:0%"></div>
         </div>
 
-        <div class="progress">
           <div class="progress__meta">
-            <span>通識</span><span class="muted">0 / 28</span>
+            <span>通識</span><span class="muted" id="metaGE">0 / 28</span>
           </div>
-          <div class="progress__bar"><div class="progress__fill" style="width:0%"></div></div>
-        </div>
+          <div class="progress__bar">
+             <div class="progress__fill" id="barGE" style="width:0%"></div>
+          </div>
 
-        <div class="progress">
           <div class="progress__meta">
-            <span>共同必修</span><span class="muted">0 /（依規定）</span>
+            <span>共同必修</span><span class="muted" id="metaReq">0 /（依規定）</span>
           </div>
-          <div class="progress__bar"><div class="progress__fill" style="width:0%"></div></div>
-        </div>
+          <div class="progress__bar">
+             <div class="progress__fill" id="barReq" style="width:0%"></div>
+          </div>
       </div>
 
       <div class="block">
@@ -128,8 +130,8 @@
 
       <div class="block">
         <div class="block__title">顧問報告（示意）</div>
-        <pre class="report">(尚未產生)
-- 這裡之後會顯示：缺哪些課、差幾學分、以及可行的選課方案 A/B</pre>
+     <pre class="report" id="reportText">(尚未產生)
+        - 這裡之後會顯示：缺哪些課、差幾學分、以及可行的選課方案 A/B</pre>
       </div>
     </section>
   </main>
@@ -139,5 +141,6 @@
       提醒：本系統為輔助工具，正式仍以教務系統與系辦審核為準。
     </div>
   </footer>
+<script src="./js/app.js"></script>
 </body>
 </html>
