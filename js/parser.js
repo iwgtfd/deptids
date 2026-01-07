@@ -1,142 +1,207 @@
-// js/parser.js  (Strict mode only)
-// 支援格式：
-// 1) CODE/NAME
-// 2) CODE/NAME/CREDITS   (credits 可省略)
-// 規則：沒有 "/" 或缺欄位 => 當作錯行，不納入課程
-//
-// 分類與學分策略：
-// - 通識：課碼 7 開頭 => category="ge"，credits=2（你已確認通識都是 2）
-// - 共同必修：以 rule.requiredCourses（物件：課名->學分）抓學分 + category="required"
-// - 其他課：
-//   - 若使用者有輸入學分 => 用輸入
-//   - 若沒輸入且資料庫也沒有 => 視為錯行（要求補 /學分），避免亂算
+// js/engine.js
+import { normalizeCourseName } from "./normalize.js";
 
-function normalizeLine(s){
-  return (s || "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+export function runAudit(
+  courses,
+  rules,
+  year,
+  track = null,
+  specializationId = null
+){
+  const rule = rules?.[year];
+  if (!rule) throw new Error("找不到規定版本：" + year);
 
-function isLikelyCourseCode(code){
-  if (!code) return false;
-  const c = code.trim();
-  return /^[0-9]{6,10}$/.test(c) || /^[A-Za-z0-9]{4,12}$/.test(c);
-}
+  const norm = (s) => normalizeCourseName(s);
 
-function parseCredits(x){
-  if (x == null || x === "") return null;
-  const n = Number(String(x).trim());
-  if (Number.isFinite(n) && n >= 0.5 && n <= 6) return n;
-  return null;
-}
+  const passedRaw = (courses || []).filter(c => c.status === "passed");
 
-export function parseTranscriptToCourses(rawText, rule){
-  const text = (rawText || "").replace(/\r/g, "\n");
-  const lines = text.split("\n").map(normalizeLine).filter(Boolean);
+  const sumCredits = (arr) =>
+    arr.reduce((s, c) => s + (Number(c.credits) || 0), 0);
 
-  const courses = [];
-  const errors = [];
-  const seen = new Set();
+  // =======================
+  // 建立學分查表（由 JSON 規則得來）
+  // - 共同必修：rule.requiredCourses = {課名:學分}
+  // - 專業註記：rules.specializations[id].prerequisites/required/electives = {課名:學分}
+  // =======================
+  function buildCreditLookup(){
+    const map = new Map(); // normName -> credits
 
-  // 重要：你 rules.json 現在有兩種可能
-  // A) geCodePrefixes 放在每個 year 的 rule 裡
-  // B) geCodePrefixes 放在 meta 裡（你後來有做 meta）
-  // 這裡先支援 A（若你之後要支援 meta，再在 app.js 傳進來即可）
-  const gePrefixes = rule?.geCodePrefixes || ["7"];
-
-  // 共同必修：你最新的 rules.json 是 requiredCourses 物件（課名->學分）
-  // 兼容舊格式（requiredCourses 是陣列）：
-  const requiredMap = (rule && typeof rule.requiredCourses === "object" && !Array.isArray(rule.requiredCourses))
-    ? rule.requiredCourses
-    : null;
-  const requiredList = Array.isArray(rule?.requiredCourses) ? rule.requiredCourses : [];
-
-  for (let i = 0; i < lines.length; i++){
-    const line = lines[i];
-
-    // 跳過常見非課程行
-    if (/^(步驟|建議：|目前|提醒：)/.test(line)) continue;
-
-    // 嚴謹：必須含 /
-    if (!line.includes("/")){
-      errors.push({
-        lineNo: i + 1,
-        line,
-        reason: "缺少分隔符 /（格式需為 課程代碼/課程名稱，可加 /學分）"
-      });
-      continue;
+    // 1) 共同必修
+    const requiredMap = rule.requiredCourses || {};
+    for (const [name, cr] of Object.entries(requiredMap)){
+      const n = norm(name);
+      const v = Number(cr);
+      if (n && Number.isFinite(v)) map.set(n, v);
     }
 
-    const parts = line.split("/").map(p => p.trim()).filter(Boolean);
-    if (parts.length < 2){
-      errors.push({ lineNo: i + 1, line, reason: "欄位不足（至少需 CODE/NAME）" });
-      continue;
+    // 2) 專業註記（只針對「目前選的 specializationId」建表）
+    if (specializationId){
+      const spec = (rules?.specializations || {})[specializationId] || null;
+      if (spec){
+        const addObj = (obj) => {
+          for (const [name, cr] of Object.entries(obj || {})){
+            const n = norm(name);
+            const v = Number(cr);
+            if (n && Number.isFinite(v)) map.set(n, v);
+          }
+        };
+        addObj(spec.prerequisites);
+        addObj(spec.required);
+        addObj(spec.electives);
+      }
     }
 
-    const code = parts[0];
-    const name = parts[1];
-
-    if (!isLikelyCourseCode(code)){
-      errors.push({ lineNo: i + 1, line, reason: "課程代碼格式不合理" });
-      continue;
-    }
-
-    if (name.length < 2){
-      errors.push({ lineNo: i + 1, line, reason: "課程名稱太短" });
-      continue;
-    }
-
-    // 去重：同 code+name 視為同一門
-    const key = `${code}__${name}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    // ===== 分類（通識 / 必修 / 其他）=====
-    // 注意優先權：共同必修 > 通識 > 其他（避免某些必修課碼剛好 7 開頭造成誤判）
-    let category = "free";
-
-    const isRequired =
-      (requiredMap && Object.prototype.hasOwnProperty.call(requiredMap, name)) ||
-      (!requiredMap && requiredList.includes(name));
-
-    const isGE = gePrefixes.some(p => code.startsWith(p));
-
-    if (isGE) category = "ge";
-    if (isRequired) category = "required";
-
-    // ===== 學分決定（嚴謹）=====
-    // 1) 使用者輸入
-    let credits = parseCredits(parts[2] ?? null);
-
-    // 2) 共同必修：直接用資料庫學分（最可靠）
-    if (credits == null && isRequired){
-      if (requiredMap) credits = Number(requiredMap[name]);
-      else credits = 2; // 舊格式沒有學分表時保底
-    }
-
-    // 3) 通識：你確認都 2 學分
-    if (credits == null && isGE){
-      credits = 2;
-    }
-
-    // 4) 其他課：如果沒輸入學分，為了避免亂算 -> 要求補上
-    if (credits == null){
-      errors.push({
-        lineNo: i + 1,
-        line,
-        reason: "缺少學分：此課不在共同必修且非通識，請補上第三欄 /學分（例如：123456/資料結構/3）"
-      });
-      continue;
-    }
-
-    courses.push({
-      code,
-      name,
-      credits,
-      status: "passed",
-      category
-    });
+    return map;
   }
 
-  return { courses, errors };
+  const creditLookup = buildCreditLookup();
+
+  // =======================
+  // 回填 passed 的 credits（嚴謹版）
+  // 規則：
+  // - 若使用者本來就有填 credits：用使用者的
+  // - 通識：固定 2
+  // - 其他：必須能在 creditLookup 找到，否則直接 throw（避免錯算）
+  // =======================
+  const passed = passedRaw.map((c) => {
+    const userCr = Number(c.credits);
+    const hasUserCredits = Number.isFinite(userCr) && userCr > 0;
+
+    if (hasUserCredits) return { ...c, credits: userCr };
+
+    // 通識固定 2
+    if (c.category === "ge") return { ...c, credits: 2 };
+
+    // 其他課：必須查得到
+    const n = norm(c.name);
+    if (n && creditLookup.has(n)){
+      return { ...c, credits: creditLookup.get(n) };
+    }
+
+    // 查不到就中斷（嚴謹：避免產生錯的學分）
+    throw new Error(
+      `無法從資料庫判斷學分：${c.name}\n` +
+      `可能原因：課名與規則表不完全一致（全形/半形、空格、括號、（一）（二）等）\n` +
+      `請修正輸入課名或更新 rules.json 的課名。`
+    );
+  });
+
+  // =======================
+  // 總學分 / 通識學分（回填後）
+  // =======================
+  const totalCredits = sumCredits(passed);
+  const geCredits = sumCredits(passed.filter(c => c.category === "ge"));
+
+  // =======================
+  // 共同必修檢核（exact match after normalize）
+  // =======================
+  const requiredMap = rule.requiredCourses || {}; // {課名:學分}
+
+  const takenNameSet = new Set(
+    passed.map(c => norm(c.name)).filter(Boolean)
+  );
+
+  const requiredEntries = Object.keys(requiredMap).map(name => ({
+    raw: name,
+    norm: norm(name)
+  }));
+
+  const missingRequired = requiredEntries
+    .filter(r => !takenNameSet.has(r.norm))
+    .map(r => r.raw);
+
+  const requiredDone = requiredEntries.length - missingRequired.length;
+
+  // =======================
+  // 專業註記檢核（選到才算）
+  // =======================
+  let specialization = null;
+  const specMap = rules.specializations || {};
+
+  if (specializationId){
+    const spec = specMap[specializationId];
+
+    if (!spec){
+      throw new Error(`找不到專業註記規則：${specializationId}`);
+    }
+
+    const prereqMap = spec.prerequisites || {};
+    const reqMap = spec.required || {};
+    const elecMap = spec.electives || {};
+    const minCredits = spec.minCredits ?? 20;
+
+    const prereqNames = Object.keys(prereqMap);
+    const reqNames = Object.keys(reqMap);
+    const elecNames = Object.keys(elecMap);
+
+    const prereqMissing = prereqNames.filter(n => !takenNameSet.has(norm(n)));
+    const requiredMissing = reqNames.filter(n => !takenNameSet.has(norm(n)));
+
+    const allowedSet = new Set(
+      [...prereqNames, ...reqNames, ...elecNames].map(norm).filter(Boolean)
+    );
+
+    const takenInSpec = passed.filter(c => allowedSet.has(norm(c.name)));
+    const specCredits = sumCredits(takenInSpec);
+
+    const prereqOk = prereqMissing.length === 0;
+    const requiredOk = requiredMissing.length === 0;
+    const creditsOk = specCredits >= minCredits;
+
+    specialization = {
+      id: specializationId,
+      name: spec.name || specializationId,
+      credits: {
+        current: specCredits,
+        required: minCredits,
+        remaining: Math.max(0, minCredits - specCredits),
+        ok: creditsOk
+      },
+      prereq: {
+        total: prereqNames.length,
+        missing: prereqMissing,
+        ok: prereqOk
+      },
+      required: {
+        total: reqNames.length,
+        missing: requiredMissing,
+        ok: requiredOk
+      },
+      ok: prereqOk && requiredOk && creditsOk
+    };
+  }
+
+  // =======================
+  // 114 乙組（保留：示意）
+  // 注意：major/minor category 你目前 parser 還沒做 mapping，所以這塊可能一直是 0
+  // =======================
+  let trackResult = null;
+  if (year === "114" && track === "B"){
+    const majorCredits = sumCredits(passed.filter(c => c.category === "major"));
+    const minorCredits = sumCredits(passed.filter(c => c.category === "minor"));
+    trackResult = {
+      major: { current: majorCredits, required: rule.tracks?.B?.majorCredits ?? 0 },
+      minor: { current: minorCredits, required: rule.tracks?.B?.minorOrProgramCredits ?? 0 }
+    };
+  }
+
+  return {
+    total: {
+      current: totalCredits,
+      required: rule.totalCredits,
+      ok: totalCredits >= rule.totalCredits
+    },
+    ge: {
+      current: geCredits,
+      required: rule.geCredits,
+      ok: geCredits >= rule.geCredits
+    },
+    required: {
+      done: requiredDone,
+      total: requiredEntries.length,
+      missing: missingRequired
+    },
+    specialization,
+    trackResult
+  };
 }
