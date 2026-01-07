@@ -297,7 +297,7 @@ async function init(){
       const track = year === "114" ? (getTrack114() || "B") : null;
       const specializationId = $("specSelect")?.value || null;
 
-      const parsed = strictParseFromTextarea(year, rules);
+      const parsed = parseTranscriptToCourses(rawText, rules, year);
       if (!parsed.ok){
         alert(parsed.message);
         return;
