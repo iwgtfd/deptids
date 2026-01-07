@@ -5,7 +5,7 @@
   --sans: "Microsoft JhengHei","Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   --mono: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
 
-  --bg: #f5f6f8;          /* 全站背景（淺灰白） */
+  --bg: #f5f6f8;          /* 全站背景 */
   --panel: #ffffff;       /* 卡片白底 */
   --panel2: #fafafa;      /* 次要區塊底色 */
   --text: #111111;        /* 主文字 */
