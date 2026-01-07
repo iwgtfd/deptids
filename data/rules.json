@@ -56,7 +56,7 @@
 
   "specializations": {
     "cs_minor": {
-      "name": "資訊工程學系輔系（專業註記）",
+      "name": "資訊工程學系",
       "minCredits": 20,
       "prerequisites": {
         "程式設計（一）": 3,
@@ -76,7 +76,7 @@
     },
 
     "adultedu_minor": {
-      "name": "成人及繼續教育學系輔系（專業註記）",
+      "name": "成人及繼續教育學系",
       "minCredits": 20,
       "prerequisites": {},
       "required": {
@@ -92,7 +92,7 @@
     },
 
     "ba_minor": {
-      "name": "企業管理學系輔系（專業註記）",
+      "name": "企業管理學系",
       "minCredits": 20,
       "prerequisites": {},
       "required": {
@@ -111,7 +111,7 @@
     },
 
     "labor_minor": {
-      "name": "勞工關係學系輔系（專業註記）",
+      "name": "勞工關係學系",
       "minCredits": 20,
       "prerequisites": {
         "經濟學": 3,
@@ -129,7 +129,7 @@
     },
 
     "crimeprevention_minor": {
-      "name": "犯罪防治學系輔系（專業註記）",
+      "name": "犯罪防治學系",
       "minCredits": 20,
       "prerequisites": {},
       "required": {
@@ -155,7 +155,7 @@
     },
 
     "psych_minor": {
-      "name": "心理學系輔系（專業註記）",
+      "name": "心理學系",
       "minCredits": 20,
       "prerequisites": {},
       "required": {
@@ -178,7 +178,7 @@
     },
 
     "comm_minor": {
-      "name": "傳播學系輔系（專業註記）",
+      "name": "傳播學系",
       "minCredits": 20,
       "prerequisites": {},
       "required": {
@@ -207,7 +207,7 @@
     },
 
     "chinese_minor": {
-      "name": "中國文學系輔系（專業註記）",
+      "name": "中國文學系",
       "minCredits": 20,
       "prerequisites": {},
       "required": {
@@ -231,7 +231,7 @@
     },
 
     "foreignlang_minor": {
-      "name": "外國語文學系輔系（專業註記）",
+      "name": "外國語文學系",
       "minCredits": 20,
       "prerequisites": {},
       "required": {
@@ -249,24 +249,24 @@
       "electives": {}
     },
 
-    "history_minor": { "name": "歷史學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "philosophy_minor": { "name": "哲學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "math_minor": { "name": "數學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "biomed_minor": { "name": "生物醫學科學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "earthenv_minor": { "name": "地球與環境科學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "chem_bio_minor": { "name": "化學暨生物學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "history_minor": { "name": "歷史學系）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "philosophy_minor": { "name": "哲學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "math_minor": { "name": "數學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "biomed_minor": { "name": "生物醫學科學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "earthenv_minor": { "name": "地球與環境科學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "chem_bio_minor": { "name": "化學暨生物學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
     "physics_minor": { "name": "物理學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "socialwelfare_minor": { "name": "社會福利學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "politics_minor": { "name": "政治學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "ee_minor": { "name": "電機工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "me_minor": { "name": "機械工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "che_minor": { "name": "化學工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "commeng_minor": { "name": "通訊工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "econ_minor": { "name": "經濟學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "finance_minor": { "name": "財務金融學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "acctit_minor": { "name": "會計與資訊科技學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "mis_minor": { "name": "資訊管理學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "law_minor": { "name": "法律學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
-    "finlaw_minor": { "name": "財經法律學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} }
+    "socialwelfare_minor": { "name": "社會福利學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "politics_minor": { "name": "政治學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "ee_minor": { "name": "電機工程學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "me_minor": { "name": "機械工程學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "che_minor": { "name": "化學工程學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "commeng_minor": { "name": "通訊工程學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "econ_minor": { "name": "經濟學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "finance_minor": { "name": "財務金融學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "acctit_minor": { "name": "會計與資訊科技學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "mis_minor": { "name": "資訊管理學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "law_minor": { "name": "法律學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "finlaw_minor": { "name": "財經法律學系", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} }
   }
 }
