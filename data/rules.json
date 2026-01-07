@@ -1,13 +1,8 @@
 {
-  "meta": {
-    "geCodePrefixes": ["7"],
-    "defaultGECredits": 2
-  },
-
   "113": {
     "totalCredits": 128,
     "geCredits": 28,
-
+    "geCodePrefixes": ["7"],
     "requiredCourses": {
       "中正講座-向典範學習": 2,
       "認識大學教育": 2,
@@ -26,18 +21,13 @@
       "跨領域專題研究（二）": 2,
       "跨領域專題研究（三）": 2,
       "跨領域專題研究（四）": 2
-    },
-
-    "specializationRule": {
-      "type": "minor",
-      "minCredits": 20
     }
   },
 
   "114": {
     "totalCredits": 128,
     "geCredits": 28,
-
+    "geCodePrefixes": ["7"],
     "requiredCourses": {
       "科學與技術通論（一）": 3,
       "人文與社會通論（一）": 3,
@@ -56,30 +46,17 @@
       "跨領域專題研究與實作（一）": 2,
       "跨領域專題研究與實作（二）": 2
     },
-
     "tracks": {
-      "A": {
-        "requiredCourses": {
-          "論文寫作入門（Essay Writing）": 2,
-          "進階英語寫作與溝通（一）": 2,
-          "進階英語寫作與溝通（二）": 2,
-          "新興科技與社會變化": 2,
-          "研究方法：量化與質化取徑": 2,
-          "研究方法：專題實作與應用": 2
-        },
-        "electiveCredits": 12
-      },
-
       "B": {
         "majorCredits": 44,
-        "minorCredits": 20
+        "minorOrProgramCredits": 20
       }
     }
   },
 
   "specializations": {
-    "cs": {
-      "name": "資訊工程學系",
+    "cs_minor": {
+      "name": "資訊工程學系輔系（專業註記）",
       "minCredits": 20,
       "prerequisites": {
         "程式設計（一）": 3,
@@ -95,12 +72,13 @@
         "計算方法概論": 3,
         "計算機組織": 3
       },
-      "electivesAllowed": true
+      "electives": {}
     },
 
-    "adultEdu": {
-      "name": "成人及繼續教育學系",
+    "adultedu_minor": {
+      "name": "成人及繼續教育學系輔系（專業註記）",
       "minCredits": 20,
+      "prerequisites": {},
       "required": {
         "成人教育導論": 3,
         "成人發展與學習": 3,
@@ -110,12 +88,13 @@
         "成人教育社會學": 3,
         "創造力發展": 3
       },
-      "electivesAllowed": true
+      "electives": {}
     },
 
-    "ba": {
-      "name": "企業管理學系",
+    "ba_minor": {
+      "name": "企業管理學系輔系（專業註記）",
       "minCredits": 20,
+      "prerequisites": {},
       "required": {
         "經濟學原理（一）": 3,
         "初級會計學（一）": 3,
@@ -128,11 +107,11 @@
         "策略管理": 3,
         "運籌管理": 3
       },
-      "electivesAllowed": true
+      "electives": {}
     },
 
-    "labor": {
-      "name": "勞工關係學系",
+    "labor_minor": {
+      "name": "勞工關係學系輔系（專業註記）",
       "minCredits": 20,
       "prerequisites": {
         "經濟學": 3,
@@ -146,12 +125,13 @@
         "勞資爭議處理": 3,
         "勞動經濟學": 3
       },
-      "electivesAllowed": true
+      "electives": {}
     },
 
-    "crime": {
-      "name": "犯罪防治學系",
+    "crimeprevention_minor": {
+      "name": "犯罪防治學系輔系（專業註記）",
       "minCredits": 20,
+      "prerequisites": {},
       "required": {
         "社會學（一）": 2,
         "社會學（二）": 2,
@@ -171,12 +151,13 @@
         "監獄學": 2,
         "刑事政策": 3
       },
-      "electivesAllowed": true
+      "electives": {}
     },
 
-    "psy": {
-      "name": "心理學系",
+    "psych_minor": {
+      "name": "心理學系輔系（專業註記）",
       "minCredits": 20,
+      "prerequisites": {},
       "required": {
         "普通心理學（一）": 3,
         "普通心理學（二）": 3,
@@ -196,9 +177,10 @@
       }
     },
 
-    "comm": {
-      "name": "傳播學系",
+    "comm_minor": {
+      "name": "傳播學系輔系（專業註記）",
       "minCredits": 20,
+      "prerequisites": {},
       "required": {
         "傳播概論": 3,
         "傳播理論": 3
@@ -222,6 +204,69 @@
         "校內實習（二）": 2,
         "校外實習（一）": 2
       }
-    }
+    },
+
+    "chinese_minor": {
+      "name": "中國文學系輔系（專業註記）",
+      "minCredits": 20,
+      "prerequisites": {},
+      "required": {
+        "中國文學史（一）": 3,
+        "中國文學史（二）": 3,
+        "文字學（一）": 2,
+        "文字學（二）": 2,
+        "中國思想史（一）": 3,
+        "中國思想史（二）": 3
+      },
+      "electives": {
+        "歷代文選及習作（一）": 2,
+        "歷代文選及習作（二）": 2,
+        "聲韻學（一）": 2,
+        "聲韻學（二）": 2,
+        "詩選及習作（一）": 2,
+        "詩選及習作（二）": 2,
+        "詞選及習作": 3,
+        "曲選及習作": 3
+      }
+    },
+
+    "foreignlang_minor": {
+      "name": "外國語文學系輔系（專業註記）",
+      "minCredits": 20,
+      "prerequisites": {},
+      "required": {
+        "英語聽講（一）": 3,
+        "英語聽講（二）": 3,
+        "英語聽講（三）": 3,
+        "英文作文（一）": 3,
+        "英文作文（二）": 3,
+        "英文作文（三）": 3,
+        "西洋文學概論（一）": 3,
+        "西洋文學概論（二）": 3,
+        "語言學概論（一）": 3,
+        "語言學概論（二）": 3
+      },
+      "electives": {}
+    },
+
+    "history_minor": { "name": "歷史學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "philosophy_minor": { "name": "哲學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "math_minor": { "name": "數學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "biomed_minor": { "name": "生物醫學科學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "earthenv_minor": { "name": "地球與環境科學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "chem_bio_minor": { "name": "化學暨生物學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "physics_minor": { "name": "物理學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "socialwelfare_minor": { "name": "社會福利學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "politics_minor": { "name": "政治學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "ee_minor": { "name": "電機工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "me_minor": { "name": "機械工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "che_minor": { "name": "化學工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "commeng_minor": { "name": "通訊工程學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "econ_minor": { "name": "經濟學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "finance_minor": { "name": "財務金融學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "acctit_minor": { "name": "會計與資訊科技學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "mis_minor": { "name": "資訊管理學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "law_minor": { "name": "法律學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} },
+    "finlaw_minor": { "name": "財經法律學系輔系（待補）", "minCredits": 20, "prerequisites": {}, "required": {}, "electives": {} }
   }
 }
