@@ -56,6 +56,15 @@ export function parseTranscriptToCourses(rawText, rule){
     const name = parts[1];
     const credits = parseCredits(parts[2] ?? null) ?? 2; // 學分省略時預設 2（紫荊共同必修多為 2）
 
+    // === 分類（通識 / 非通識）===
+    let category = "free";
+
+    // 通識：課程代碼 7 開頭
+    const gePrefixes = rule.geCodePrefixes || [];
+    if (gePrefixes.some(p => code.startsWith(p))) {
+      category = "ge";
+    }
+
     if (!isLikelyCourseCode(code)){
       errors.push({ lineNo: i + 1, line, reason: "課程代碼格式不合理" });
       continue;
@@ -77,13 +86,12 @@ export function parseTranscriptToCourses(rawText, rule){
     if (requiredList.includes(name)) category = "required";
 
     // 若你之後要更嚴謹通識/註記分類，可在此加入 mapping table（第 5 步）
-    courses.push({
+   courses.push({
       code,
       name,
       credits,
       status: "passed",
-      category,
-      raw: line
+      category
     });
   }
 
