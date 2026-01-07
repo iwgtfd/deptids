@@ -1,5 +1,7 @@
 // js/app.js  (ES Module)
 import { runAudit } from "./engine.js";
+import { parseTranscriptToCourses } from "./parser.js";
+
 
 /* ----------------------------
  * Utils
@@ -46,7 +48,6 @@ function setProgress(barId, metaId, current, required){
  * GitHub Pages-safe loader
  * ---------------------------- */
 async function loadRules(){
-  // ✅ 對 GitHub Pages 子路徑（/deptids/）最穩的寫法
   const base = new URL(".", window.location.href);
   const url = new URL("data/rules.json", base);
 
@@ -55,10 +56,7 @@ async function loadRules(){
   return await res.json();
 }
 
-/* ----------------------------
- * Demo courses (Mock input)
- * 後續第 4 步會用 parser 把 textarea 真的解析成 courses[]
- * ---------------------------- */
+
 function buildFakeCourses(year, track){
   if (year === "113"){
     return [
@@ -243,8 +241,17 @@ async function init(){
     const year = getRuleYear();
     const track = (year === "114") ? (getTrack114() || "B") : null;
 
-    // 3.5 步：先用假課程清單
-    const courses = buildFakeCourses(year, track);
+    const rawText = document.getElementById("txtRaw")?.value || "";
+    let courses = [];
+
+    if (rawText.trim().length >= 20){
+     // 有貼成績單文字：用 parser 解析
+    courses = parseTranscriptToCourses(rawText, rules[year]);
+    } 
+    else {
+      // 沒貼文字：用假資料當備援（demo 不會掛）
+    courses = buildFakeCourses(year, track);
+    }
 
     // 真正跑規則引擎
     const audit = runAudit(courses, rules, year, track);
