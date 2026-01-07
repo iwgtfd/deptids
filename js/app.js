@@ -27,7 +27,6 @@ function setTrackEnabled(enabled){
     a.checked = false;
     b.checked = false;
   } else {
-    // 預設乙組（你也可拿掉預設）
     if (!a.checked && !b.checked) b.checked = true;
   }
 }
@@ -95,15 +94,8 @@ function buildReportText(year, track, audit){
   );
   lines.push("------------------------------------------------");
 
-  lines.push(
-    `📌 總學分：${audit.total.current}/${audit.total.required}` +
-    `（尚差 ${Math.max(0, audit.total.required - audit.total.current)}）`
-  );
-
-  lines.push(
-    `📌 通識：${audit.ge.current}/${audit.ge.required}` +
-    `（尚差 ${Math.max(0, audit.ge.required - audit.ge.current)}）`
-  );
+  lines.push(`📌 總學分：${audit.total.current}/${audit.total.required}（尚差 ${Math.max(0, audit.total.required - audit.total.current)}）`);
+  lines.push(`📌 通識：${audit.ge.current}/${audit.ge.required}（尚差 ${Math.max(0, audit.ge.required - audit.ge.current)}）`);
 
   lines.push(`📌 共同必修：${audit.required.done}/${audit.required.total}`);
   if (missingReq.length){
@@ -113,83 +105,48 @@ function buildReportText(year, track, audit){
     lines.push("✅ 共同必修已完成");
   }
 
+  // ✅ 自由選修（紫荊核心）
+  if (audit.free){
+    lines.push("");
+    lines.push(`📌 自由選修：${audit.free.current}/${audit.free.required}（尚差 ${Math.max(0, audit.free.required - audit.free.current)}）`);
+    lines.push(audit.free.ok ? "✅ 自由選修已達標" : "⚠️ 自由選修尚未達標");
+  }
+
+  // 專業註記
   if (audit.specialization){
     const s = audit.specialization;
-
     lines.push("");
     lines.push(`📌 專業註記：${s.name}`);
 
     if (s.prereq && !s.prereq.ok){
       lines.push("❗ 先修尚缺：");
       (s.prereq.missing || []).forEach(c => lines.push(`- ${c}`));
-    } else if (s.prereq && s.prereq.ok){
+    } else if (s.prereq?.ok){
       lines.push("✅ 先修已完成");
     }
 
     if (s.required && !s.required.ok){
       lines.push("❗ 必修尚缺：");
       (s.required.missing || []).forEach(c => lines.push(`- ${c}`));
-    } else if (s.required && s.required.ok){
+    } else if (s.required?.ok){
       lines.push("✅ 必修已完成");
     }
 
-    if (s.credits){
-      lines.push(
-        `📌 專業註記學分：${s.credits.current}/${s.credits.required}` +
-        `（尚差 ${s.credits.remaining}）`
-      );
-    }
-
+    lines.push(`📌 註記學分：${s.credits.current}/${s.credits.required}（尚差 ${s.credits.remaining}）`);
     lines.push(s.ok ? "🎉 已達成專業註記門檻" : "⚠️ 尚未達成專業註記門檻");
-  }
-
-  if (year === "114" && track === "B" && audit.trackResult){
-    const m = audit.trackResult.major;
-    const n = audit.trackResult.minor;
-
-    lines.push("");
-    lines.push("📌 114 乙組學分門檻");
-    lines.push(`- 主專業註記：${m.current}/${m.required}`);
-    lines.push(`- 輔專業／學程：${n.current}/${n.required}`);
-  }
-
-  // 建議
-  lines.push("");
-  lines.push("💡 建議：");
-  lines.push("🧭 下一學期修課建議（優先順序）");
-
-  if (missingReq.length > 0){
-    lines.push("1️⃣ 優先補齊共同必修：");
-    missingReq.slice(0, 4).forEach(c => lines.push(`- ${c}`));
   } else {
-    lines.push("1️⃣ 共同必修已完成，可把重心放在通識/專業註記/總學分。");
-  }
-
-  if (audit.specialization){
-    const s = audit.specialization;
-    const prereqMissing = s.prereq?.missing || [];
-    const requiredMissing = s.required?.missing || [];
-
-    if (prereqMissing.length > 0){
-      lines.push("2️⃣ 專業註記先修優先：");
-      prereqMissing.slice(0, 4).forEach(c => lines.push(`- ${c}`));
-    } else if (requiredMissing.length > 0){
-      lines.push("2️⃣ 專業註記必修優先：");
-      requiredMissing.slice(0, 4).forEach(c => lines.push(`- ${c}`));
-    } else if (!s.ok){
-      lines.push("2️⃣ 專業註記必修已齊，下一步用可計入課程補足學分到門檻。");
-    } else {
-      lines.push("2️⃣ 專業註記已達標。");
+    // 114乙組：若不選註記，表示你走「自由選修20」那條
+    if (year === "114" && track === "B"){
+      lines.push("");
+      lines.push("ℹ️ 你目前未選專業註記：系統將以「乙組自由選修 20 學分」路線檢核。");
     }
-  } else {
-    lines.push("2️⃣ 建議先選擇你的專業註記（系/輔系）才能計算進度。");
   }
 
-  if (!audit.total.ok){
-    lines.push("3️⃣ 視課表空間補通識或自由選修，以補足總學分。");
-  } else {
-    lines.push("3️⃣ 總學分已達標，後續以畢業門檻缺項為主。");
-  }
+  lines.push("");
+  lines.push("💡 下一步建議：");
+  if (missingReq.length) lines.push("1) 先補共同必修缺項（最容易卡畢業）。");
+  if (!audit.free?.ok) lines.push("2) 再補自由選修學分缺口（任何非通識/非共同必修/非被註記計入的課都算）。");
+  if (audit.specialization && !audit.specialization.ok) lines.push("3) 專業註記用『先修→必修→補學分』順序。");
 
   return lines.join("\n");
 }
@@ -198,37 +155,33 @@ function buildReportText(year, track, audit){
  * UI update
  * ---------------------------- */
 function applyAuditToUI(year, track, audit){
-  if ($("kpiCredits")) $("kpiCredits").textContent = String(audit.total.current ?? "—");
-  if ($("kpiReq")) $("kpiReq").textContent = `${audit.required.done}/${audit.required.total}`;
+  $("kpiCredits").textContent = String(audit.total.current ?? "—");
+  $("kpiReq").textContent = `${audit.required.done}/${audit.required.total}`;
 
+  // KPI：顯示自由選修進度更直覺（你也可改回註記）
   if ($("kpiSpec")){
-    if (audit.specialization?.credits){
-      $("kpiSpec").textContent = `${audit.specialization.credits.current}/${audit.specialization.credits.required}`;
-    } else {
-      $("kpiSpec").textContent = "—";
-    }
+    $("kpiSpec").textContent = audit.free ? `${audit.free.current}/${audit.free.required}` : "—";
   }
 
   setProgress("barTotal", "metaTotal", audit.total.current, audit.total.required);
   setProgress("barGE", "metaGE", audit.ge.current, audit.ge.required);
 
   const reqRatio = audit.required.total > 0 ? clamp01(audit.required.done / audit.required.total) : 0;
-  if ($("barReq")) $("barReq").style.width = `${Math.round(reqRatio * 100)}%`;
-  if ($("metaReq")) $("metaReq").textContent = `${audit.required.done} / ${audit.required.total}`;
+  $("barReq").style.width = `${Math.round(reqRatio * 100)}%`;
+  $("metaReq").textContent = `${audit.required.done} / ${audit.required.total}`;
 
-  if ($("reportText")) $("reportText").textContent = buildReportText(year, track, audit);
+  $("reportText").textContent = buildReportText(year, track, audit);
 }
 
 /* ----------------------------
- * Strict parse (✅ 用新版 parser 介面)
+ * Strict parse（✅ 正確三參數）
  * ---------------------------- */
 function strictParseFromTextarea(year, rules){
   const rawText = $("txtRaw")?.value || "";
   if (rawText.trim().length < 5){
-    return { ok: false, message: "請貼上課程清單（每行：課程代碼/課程名稱[/學分]）" };
+    return { ok: false, message: "請貼上課程清單（課程代碼/課程名稱[/學分]）" };
   }
 
-  // ✅ 這裡要用新版介面：parseTranscriptToCourses(rawText, rules, year)
   const parsed = parseTranscriptToCourses(rawText, rules, year);
   const errors = parsed?.errors || [];
 
@@ -241,7 +194,7 @@ function strictParseFromTextarea(year, rules){
       ok: false,
       message:
         `輸入格式錯誤（共 ${errors.length} 行）：\n\n${preview}\n\n` +
-        `👉 提醒：非通識、非共同必修、也不在專業註記課庫的課，請補 /學分（例：123456/資料結構/3）`
+        `👉 提醒：非通識、非共同必修、且資料庫沒有的課，請補第三欄 /學分（例：123456/資料結構/3）`
     };
   }
 
@@ -277,38 +230,31 @@ async function init(){
   });
 
   // Run
-  const btnRun = $("btnRun");
-  if (btnRun){
-    btnRun.addEventListener("click", () => {
-      const year = getRuleYear();
-      const track = year === "114" ? (getTrack114() || "B") : null;
-      const specializationId = $("specSelect")?.value || null;
+  $("btnRun")?.addEventListener("click", () => {
+    const year = getRuleYear();
+    const track = year === "114" ? (getTrack114() || "B") : null;
+    const specializationId = $("specSelect")?.value || null;
 
-      // ✅ 一律走嚴謹解析（這裡才會拿到 rawText）
-      const parsed = strictParseFromTextarea(year, rules);
-      if (!parsed.ok){
-        alert(parsed.message);
-        return;
-      }
+    const parsed = strictParseFromTextarea(year, rules);
+    if (!parsed.ok){
+      alert(parsed.message);
+      return;
+    }
 
-      const audit = runAudit(parsed.courses, rules, year, track, specializationId);
-      applyAuditToUI(year, track, audit);
-    });
-  }
+    const audit = runAudit(parsed.courses, rules, year, track, specializationId);
+    applyAuditToUI(year, track, audit);
+  });
 
   // Copy
-  const btnCopy = $("btnCopy");
-  if (btnCopy){
-    btnCopy.addEventListener("click", async () => {
-      const text = $("reportText")?.textContent || "";
-      try{
-        await navigator.clipboard.writeText(text);
-        alert("已複製報告 ✅");
-      } catch {
-        alert("無法自動複製（可能因瀏覽器權限），請手動全選複製。");
-      }
-    });
-  }
+  $("btnCopy")?.addEventListener("click", async () => {
+    const text = $("reportText")?.textContent || "";
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("已複製報告 ✅");
+    } catch {
+      alert("無法自動複製，請手動全選複製。");
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
