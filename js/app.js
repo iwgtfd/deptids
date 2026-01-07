@@ -147,11 +147,40 @@ function buildReportText(year, track, audit){
     lines.push(`- 輔專業／學程：${n.current}/${n.required}`);
   }
 
+ /* ===== Next-term suggestions ===== */
   lines.push("");
   lines.push("💡 建議：");
-  lines.push("1. 優先補齊共同必修。");
-  if (audit.specialization && !audit.specialization.ok){
-    lines.push("2. 專業註記請依『先修 → 必修 → 補學分』順序規劃。");
+  lines.push("");
+  lines.push("🧭 下一學期修課建議（優先順序）");
+
+  // 1️⃣ 共同必修
+  if (audit.required.missing.length > 0){
+    lines.push("1️⃣ 優先補齊共同必修：");
+    audit.required.missing.slice(0, 3).forEach(c => {
+      lines.push(`- ${c}`);
+    });
+  }
+
+  // 2️⃣ 專業註記
+  if (audit.specialization){
+    const s = audit.specialization;
+
+    if (s.prereq && s.prereq.missing.length > 0){
+      lines.push("2️⃣ 專業註記先修課程：");
+      s.prereq.missing.slice(0, 3).forEach(c => {
+        lines.push(`- ${c}`);
+      });
+    } else if (s.required && s.required.missing.length > 0){
+      lines.push("2️⃣ 專業註記必修課程：");
+      s.required.missing.slice(0, 3).forEach(c => {
+        lines.push(`- ${c}`);
+      });
+    }
+  }
+
+  // 3️⃣ 學分策略
+  if (!audit.total.ok){
+    lines.push("3️⃣ 視課表空間補通識或自由選修，以補足總學分。");
   }
 
   return lines.join("\n");
