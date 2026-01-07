@@ -153,12 +153,11 @@ function buildReportText(year, track, audit){
     lines.push(`- 輔專業／學程：${n.current}/${n.required}`);
   }
 
-  // ===== Next-term suggestions =====
+  // 建議
   lines.push("");
   lines.push("💡 建議：");
   lines.push("🧭 下一學期修課建議（優先順序）");
 
-  // 1) 共同必修
   if (missingReq.length > 0){
     lines.push("1️⃣ 優先補齊共同必修：");
     missingReq.slice(0, 4).forEach(c => lines.push(`- ${c}`));
@@ -166,7 +165,6 @@ function buildReportText(year, track, audit){
     lines.push("1️⃣ 共同必修已完成，可把重心放在通識/專業註記/總學分。");
   }
 
-  // 2) 專業註記
   if (audit.specialization){
     const s = audit.specialization;
     const prereqMissing = s.prereq?.missing || [];
@@ -179,7 +177,7 @@ function buildReportText(year, track, audit){
       lines.push("2️⃣ 專業註記必修優先：");
       requiredMissing.slice(0, 4).forEach(c => lines.push(`- ${c}`));
     } else if (!s.ok){
-      lines.push("2️⃣ 專業註記必修已齊，下一步用選修/可計入課程補足學分到門檻。");
+      lines.push("2️⃣ 專業註記必修已齊，下一步用可計入課程補足學分到門檻。");
     } else {
       lines.push("2️⃣ 專業註記已達標。");
     }
@@ -187,7 +185,6 @@ function buildReportText(year, track, audit){
     lines.push("2️⃣ 建議先選擇你的專業註記（系/輔系）才能計算進度。");
   }
 
-  // 3) 學分策略
   if (!audit.total.ok){
     lines.push("3️⃣ 視課表空間補通識或自由選修，以補足總學分。");
   } else {
@@ -201,47 +198,38 @@ function buildReportText(year, track, audit){
  * UI update
  * ---------------------------- */
 function applyAuditToUI(year, track, audit){
-  const kpiCredits = $("kpiCredits");
-  const kpiReq = $("kpiReq");
-  const kpiSpec = $("kpiSpec");
+  if ($("kpiCredits")) $("kpiCredits").textContent = String(audit.total.current ?? "—");
+  if ($("kpiReq")) $("kpiReq").textContent = `${audit.required.done}/${audit.required.total}`;
 
-  if (kpiCredits) kpiCredits.textContent = String(audit.total.current ?? "—");
-  if (kpiReq) kpiReq.textContent = `${audit.required.done}/${audit.required.total}`;
-
-  if (kpiSpec){
+  if ($("kpiSpec")){
     if (audit.specialization?.credits){
-      kpiSpec.textContent = `${audit.specialization.credits.current}/${audit.specialization.credits.required}`;
+      $("kpiSpec").textContent = `${audit.specialization.credits.current}/${audit.specialization.credits.required}`;
     } else {
-      kpiSpec.textContent = "—";
+      $("kpiSpec").textContent = "—";
     }
   }
 
   setProgress("barTotal", "metaTotal", audit.total.current, audit.total.required);
   setProgress("barGE", "metaGE", audit.ge.current, audit.ge.required);
 
-  const reqRatio = audit.required.total > 0
-    ? clamp01(audit.required.done / audit.required.total)
-    : 0;
+  const reqRatio = audit.required.total > 0 ? clamp01(audit.required.done / audit.required.total) : 0;
+  if ($("barReq")) $("barReq").style.width = `${Math.round(reqRatio * 100)}%`;
+  if ($("metaReq")) $("metaReq").textContent = `${audit.required.done} / ${audit.required.total}`;
 
-  const barReq = $("barReq");
-  const metaReq = $("metaReq");
-  if (barReq) barReq.style.width = `${Math.round(reqRatio * 100)}%`;
-  if (metaReq) metaReq.textContent = `${audit.required.done} / ${audit.required.total}`;
-
-  const report = $("reportText");
-  if (report) report.textContent = buildReportText(year, track, audit);
+  if ($("reportText")) $("reportText").textContent = buildReportText(year, track, audit);
 }
 
 /* ----------------------------
- * Strict parse
+ * Strict parse (✅ 用新版 parser 介面)
  * ---------------------------- */
 function strictParseFromTextarea(year, rules){
   const rawText = $("txtRaw")?.value || "";
   if (rawText.trim().length < 5){
-    return { ok: false, message: "請貼上課程清單（課程代碼/課程名稱[/學分]）" };
+    return { ok: false, message: "請貼上課程清單（每行：課程代碼/課程名稱[/學分]）" };
   }
 
-  const parsed = parseTranscriptToCourses(rawText, rules[year]);
+  // ✅ 這裡要用新版介面：parseTranscriptToCourses(rawText, rules, year)
+  const parsed = parseTranscriptToCourses(rawText, rules, year);
   const errors = parsed?.errors || [];
 
   if (errors.length){
@@ -253,7 +241,7 @@ function strictParseFromTextarea(year, rules){
       ok: false,
       message:
         `輸入格式錯誤（共 ${errors.length} 行）：\n\n${preview}\n\n` +
-        `👉 提醒：非通識、非共同必修的課，請補第三欄 /學分（例：123456/資料結構/3）`
+        `👉 提醒：非通識、非共同必修、也不在專業註記課庫的課，請補 /學分（例：123456/資料結構/3）`
     };
   }
 
@@ -284,8 +272,7 @@ async function init(){
   setTrackEnabled(getRuleYear() === "114");
   document.querySelectorAll('input[name="ruleYear"]').forEach(el => {
     el.addEventListener("change", () => {
-      const year = getRuleYear();
-      setTrackEnabled(year === "114");
+      setTrackEnabled(getRuleYear() === "114");
     });
   });
 
@@ -297,7 +284,8 @@ async function init(){
       const track = year === "114" ? (getTrack114() || "B") : null;
       const specializationId = $("specSelect")?.value || null;
 
-      const parsed = parseTranscriptToCourses(rawText, rules, year);
+      // ✅ 一律走嚴謹解析（這裡才會拿到 rawText）
+      const parsed = strictParseFromTextarea(year, rules);
       if (!parsed.ok){
         alert(parsed.message);
         return;
