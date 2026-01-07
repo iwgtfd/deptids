@@ -17,9 +17,157 @@
       "永續能源與碳中和",
       "聯合國永續發展目標與實踐"
     ],
-    "specialization": {
-      "type": "minor",
-      "minCredits": 20
+    "specializations": {
+      "cs_minor": {
+        "name": "資工系輔系",
+        "minCredits": 20,
+        "prereqCourses": [
+          "程式設計（一）",
+          "程式設計實習（一）"
+        ],
+        "requiredCourses": [
+          "程式設計（二）",
+          "程式設計實習（二）",
+          "離散數學",
+          "資料結構",
+          "物件導向程式設計",
+          "作業系統概論",
+          "計算方法概論",
+          "計算機組織"
+        ],
+        "electiveCourses": []
+      },
+
+      "adult_ed_minor": {
+        "name": "成教系輔系",
+        "minCredits": 20,
+        "prereqCourses": [],
+        "requiredCourses": [
+          "成人教育導論",
+          "成人發展與學習",
+          "高齡社會與高齡教育",
+          "成人教育方案規劃",
+          "成人教育",
+          "成人教育社會學",
+          "創造力發展"
+        ],
+        "electiveCourses": []
+      },
+
+      "ba_minor": {
+        "name": "企管系輔系",
+        "minCredits": 20,
+        "prereqCourses": [],
+        "requiredCourses": [
+          "經濟學原理（一）",
+          "初級會計學（一）",
+          "管理學",
+          "行銷管理",
+          "統計學（一）",
+          "財務管理（一）",
+          "人力資源管理",
+          "管理資訊系統概論",
+          "策略管理",
+          "運籌管理"
+        ],
+        "electiveCourses": []
+      },
+
+      "labor_minor": {
+        "name": "勞工系輔系",
+        "minCredits": 20,
+        "prereqCourses": [
+          "經濟學",
+          "社會學"
+        ],
+        "requiredCourses": [
+          "勞工關係",
+          "勞動法概論",
+          "人力資源管理",
+          "組織行為",
+          "勞資爭議處理",
+          "勞動經濟學"
+        ],
+        "electiveCourses": []
+      },
+
+      "crime_prevention_minor": {
+        "name": "犯防系輔系",
+        "minCredits": 20,
+        "prereqCourses": [],
+        "requiredCourses": [
+          "社會學（一）",
+          "社會學（二）",
+          "心理學（一）",
+          "心理學（二）",
+          "刑事司法概論",
+          "諮商理論",
+          "刑法總則（一）",
+          "刑法總則（二）",
+          "行為統計與電腦（一）",
+          "行為統計與電腦（二）",
+          "犯罪學",
+          "犯罪心理學",
+          "少年犯罪",
+          "社會學研究法（一）",
+          "社會學研究法（二）",
+          "監獄學",
+          "刑事政策"
+        ],
+        "electiveCourses": []
+      },
+
+      "psych_minor": {
+        "name": "心理系輔系",
+        "minCredits": 20,
+        "prereqCourses": [],
+        "requiredCourses": [
+          "普通心理學（一）",
+          "普通心理學（二）",
+          "心理學實驗法（一）",
+          "心理學實驗法（二）"
+        ],
+        "electiveCourses": [
+          "生理心理學（一）",
+          "生理心理學（二）",
+          "人類學習與認知",
+          "心理測驗學理論",
+          "知覺心理學",
+          "社會心理學",
+          "發展心理學",
+          "性格心理學",
+          "變態心理學"
+        ]
+      },
+
+      "comm_minor": {
+        "name": "傳播系輔系",
+        "minCredits": 20,
+        "prereqCourses": [],
+        "requiredCourses": [
+          "傳播概論",
+          "傳播理論"
+        ],
+        "electiveCourses": [
+          "基礎寫作",
+          "基礎影像製作",
+          "社會學與傳播",
+          "傳播史",
+          "基礎聲音製作",
+          "基礎資訊製作",
+          "新聞採訪寫作",
+          "心理學與傳播",
+          "研究方法",
+          "傳播倫理",
+          "政治學與傳播",
+          "經濟學與傳播",
+          "數位媒體製作實務（一）",
+          "校內實習（一）",
+          "數位媒體製作實務（二）",
+          "校內實習（二）",
+          "校外實習（一）"
+        ]
+      }
     }
   },
 
@@ -52,6 +200,15 @@
         "majorCredits": 44,
         "minorOrProgramCredits": 20
       }
+    },
+    "specializations": {
+      "cs_minor": { "$ref": "113.specializations.cs_minor" },
+      "adult_ed_minor": { "$ref": "113.specializations.adult_ed_minor" },
+      "ba_minor": { "$ref": "113.specializations.ba_minor" },
+      "labor_minor": { "$ref": "113.specializations.labor_minor" },
+      "crime_prevention_minor": { "$ref": "113.specializations.crime_prevention_minor" },
+      "psych_minor": { "$ref": "113.specializations.psych_minor" },
+      "comm_minor": { "$ref": "113.specializations.comm_minor" }
     }
   }
 }
